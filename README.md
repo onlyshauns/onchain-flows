@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Onchain Flows
+
+Live crypto intelligence dashboard that tracks onchain flows across multiple blockchains. Share interesting whale movements, DeFi activities, and smart money moves instantly on Twitter.
+
+## Features
+
+- 🐋 **Whale Movements** - Track large transfers and smart money flows
+- 💰 **DeFi Activities** - Monitor swaps, liquidity, and yield farming
+- 🚀 **Token Launches** - Discover new trending tokens
+- 🧠 **Smart Money** - Follow top trader activities
+- 🔥 **What's Hot** - See trending onchain activity
+
+### Twitter Sharing
+- One-click share to Twitter with pre-formatted tweets
+- Beautiful auto-generated card images (OG images)
+- Copy-to-clipboard for quick sharing
+- Optimized for virality with emojis and formatting
+
+### Multi-Chain Support
+- Solana (SOL) - Priority
+- Ethereum (ETH) - Priority
+- Base - Priority
+- Arbitrum, Optimism, Polygon
+
+### Live Updates
+- Auto-refresh every 30 seconds
+- Real-time flow tracking
+- Visual update indicators
 
 ## Getting Started
 
-First, run the development server:
+### Development
 
+1. Clone the repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/onlyshauns/onchain-flows.git
+cd onchain-flows
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies
+```bash
+npm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Set up environment variables
+Create a `.env.local` file:
+```bash
+NANSEN_API_KEY=your_nansen_api_key_here
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Run the development server
+```bash
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000](http://localhost:3000) to see the dashboard.
 
-To learn more about Next.js, take a look at the following resources:
+### Production Deployment
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Deployed on Vercel with automatic deployments from the `main` branch.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Environment variables are configured in Vercel dashboard:
+- `NANSEN_API_KEY` - Your Nansen API key
+- `NEXT_PUBLIC_APP_URL` - Your production URL
 
-## Deploy on Vercel
+## Tech Stack
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Framework**: Next.js 16 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **API**: Nansen API
+- **Icons**: Lucide React
+- **Deployment**: Vercel
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── api/               # API routes (Nansen integration)
+│   ├── layout.tsx         # Root layout
+│   └── page.tsx           # Main dashboard
+├── components/            # React components
+│   ├── layout/           # Header, tabs, filters
+│   ├── flows/            # Flow cards and lists
+│   └── shared/           # Reusable components
+├── context/              # React Context (state management)
+├── lib/                  # Utilities and helpers
+│   ├── nansen/          # Nansen API client
+│   └── utils/           # Formatting, chains, Twitter
+└── types/               # TypeScript type definitions
+```
+
+## API Routes
+
+- `/api/flows/whale-movements` - Whale movement data
+- `/api/flows/defi-activities` - DeFi activity data (coming soon)
+- `/api/flows/token-launches` - Token launch data (coming soon)
+- `/api/flows/smart-money` - Smart money flows (coming soon)
+- `/api/og` - OpenGraph image generation (coming soon)
+
+## Contributing
+
+This project tracks live onchain flows using Nansen's API. Contributions welcome!
+
+## License
+
+MIT
