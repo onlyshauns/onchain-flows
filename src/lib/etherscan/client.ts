@@ -132,22 +132,47 @@ export class EtherscanClient {
     console.log('[Etherscan] Fetching transactions for', addresses.length, 'addresses');
 
     const promises = addresses.map(async ({ address, label }) => {
-      const txs = await this.getTokenTransfers(address, {
-        offset: limit,
-        sort: 'desc',
-      });
+      try {
+        const txs = await this.getTokenTransfers(address, {
+          offset: limit,
+          sort: 'desc',
+        });
 
-      return txs.map(tx => ({ tx, label }));
+        return txs.map(tx => ({ tx, label }));
+      } catch (error) {
+        console.error(`[Etherscan] Error fetching for ${label}:`, error);
+        return [];
+      }
     });
 
     const results = await Promise.all(promises);
     const allTxs = results.flat();
 
-    // Sort by timestamp (most recent first)
-    allTxs.sort((a, b) => parseInt(b.tx.timeStamp) - parseInt(a.tx.timeStamp));
+    // Filter for recent transactions (last 24 hours)
+    const oneDayAgo = Math.floor(Date.now() / 1000) - (24 * 60 * 60);
+    const recentTxs = allTxs.filter(({ tx }) => parseInt(tx.timeStamp) > oneDayAgo);
 
-    console.log('[Etherscan] Total transactions found:', allTxs.length);
-    return allTxs;
+    // Sort by timestamp (most recent first)
+    recentTxs.sort((a, b) => parseInt(b.tx.timeStamp) - parseInt(a.tx.timeStamp));
+
+    console.log('[Etherscan] Total recent transactions found:', recentTxs.length);
+    return recentTxs;
+  }
+
+  /**
+   * Get large token transfers (whale movements) from major exchanges
+   */
+  async getRecentWhaleMovements(): Promise<{ tx: EtherscanTransaction; label: string }[]> {
+    // Major exchange addresses that have lots of activity
+    const majorExchanges = [
+      { address: '0x28C6c06298d514Db089934071355E5743bf21d60', label: 'Binance' },
+      { address: '0x3f5CE5FBFe3E9af3971dD833D26bA9b5C936f0bE', label: 'Binance 2' },
+      { address: '0x71660c4005BA85c37ccec55d0C4493E66Fe775d3', label: 'Coinbase' },
+      { address: '0x503828976D22510aad0201ac7EC88293211D23Da', label: 'Coinbase 2' },
+      { address: '0x56Eddb7aa87536c09CCc2793473599fD21A8b17F', label: 'Kraken' },
+    ];
+
+    return this.getMultipleAddressTransactions(majorExchanges, 30);
   }
 }
 

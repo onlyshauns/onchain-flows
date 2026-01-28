@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
+import { getEtherscanClient } from '@/lib/etherscan/client';
+import { getLabelForAddress } from '@/lib/etherscan/addresses';
 import { Chain, Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
@@ -9,31 +11,28 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Trending - chains:', chains);
 
+  let allFlows: Flow[] = [];
+  let dataSource = 'None';
+
+  // Try Nansen first
   try {
     const client = getNansenClient();
-    const allFlows: Flow[] = [];
 
-    // Fetch high-volume transfers for each chain
     for (const chainParam of chains) {
       const chain = chainParam.toLowerCase() as Chain;
       const popularTokens = client.getPopularTokens(chain);
 
-      if (popularTokens.length === 0) {
-        console.log(`[API] No popular tokens configured for ${chain}`);
-        continue;
-      }
+      if (popularTokens.length === 0) continue;
 
-      // Get transfers for multiple tokens to show trending activity
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          console.log('[API] Fetching trending transfers for:', tokenAddress.substring(0, 10) + '...');
-
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 100000, // $100k+ for trending
+            minValueUsd: 100000,
             limit: 30,
           });
 
           if (response.data && response.data.length > 0) {
+            dataSource = 'Nansen';
             response.data.forEach((transfer) => {
               allFlows.push({
                 id: transfer.transaction_hash,
@@ -63,41 +62,79 @@ export async function GET(request: NextRequest) {
             });
           }
         } catch (error) {
-          console.error(`[API] Error fetching trending for ${chain}:`, error);
+          console.error(`[API] Nansen error for ${chain}:`, error);
         }
       }
     }
-
-    // Sort by timestamp DESC (most recent first)
-    allFlows.sort((a, b) => b.timestamp - a.timestamp);
-
-    console.log('[API] Total trending flows:', allFlows.length);
-
-    return NextResponse.json(
-      {
-        flows: allFlows.slice(0, limit),
-        total: allFlows.length,
-        source: 'Nansen',
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-        },
-      }
-    );
   } catch (error) {
-    console.error('[API] Trending error:', error);
-
-    return NextResponse.json(
-      {
-        flows: [],
-        total: 0,
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
-        },
-      }
-    );
+    console.error('[API] Nansen client error:', error);
   }
+
+  // Fallback to Etherscan if no Nansen data
+  if (allFlows.length === 0 && chains.includes('ethereum')) {
+    console.log('[API] Falling back to Etherscan for trending');
+
+    try {
+      const etherscanClient = getEtherscanClient();
+      const transactions = await etherscanClient.getRecentWhaleMovements();
+
+      dataSource = 'Etherscan (Recent 24h)';
+
+      transactions.slice(0, 40).forEach(({ tx, label }) => {
+        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+        const timestamp = parseInt(tx.timeStamp) * 1000;
+
+        if (value > 5000 || tx.tokenSymbol === 'USDC' || tx.tokenSymbol === 'USDT') {
+          const fromLabel = getLabelForAddress(tx.from) || label;
+          const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+
+          allFlows.push({
+            id: tx.hash,
+            type: 'whale-movement',
+            chain: 'ethereum',
+            timestamp,
+            amount: value,
+            amountUsd: value * 1,
+            token: {
+              symbol: tx.tokenSymbol,
+              address: tx.contractAddress,
+              name: tx.tokenName,
+            },
+            from: {
+              address: tx.from,
+              label: fromLabel,
+            },
+            to: {
+              address: tx.to,
+              label: toLabel,
+            },
+            txHash: tx.hash,
+            metadata: {
+              category: 'Trending',
+            },
+          });
+        }
+      });
+    } catch (error) {
+      console.error('[API] Etherscan fallback error:', error);
+    }
+  }
+
+  // Sort by timestamp DESC (most recent first)
+  allFlows.sort((a, b) => b.timestamp - a.timestamp);
+
+  console.log('[API] Total trending flows:', allFlows.length, 'Source:', dataSource);
+
+  return NextResponse.json(
+    {
+      flows: allFlows.slice(0, limit),
+      total: allFlows.length,
+      source: dataSource,
+    },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+      },
+    }
+  );
 }
