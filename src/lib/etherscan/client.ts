@@ -23,6 +23,7 @@ export interface EtherscanResponse {
 
 export class EtherscanClient {
   private apiKey: string;
+  public lastResponse: any = null; // For debugging
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.ETHERSCAN_API_KEY || DEFAULT_API_KEY;
@@ -62,6 +63,9 @@ export class EtherscanClient {
 
       const response = await fetch(url);
       const data: EtherscanResponse = await response.json();
+
+      // Store for debugging
+      this.lastResponse = data;
 
       console.log('[Etherscan] API Response status:', data.status);
       console.log('[Etherscan] API Response message:', data.message);

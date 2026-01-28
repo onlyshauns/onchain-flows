@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
       rawTransactionCount: binanceTxs.length,
       filteredTransactionCount: transactions.length,
       logs,
+      etherscanRawResponse: client.lastResponse, // Show raw API response
       sampleRawData: binanceTxs.slice(0, 2).map(tx => ({
         hash: tx.hash.substring(0, 20) + '...',
         symbol: tx.tokenSymbol,
