@@ -23,12 +23,16 @@ export function normalizeTransfer(
   const assetSymbol = transfer.token_symbol || inferTokenSymbol(chain);
   const assetAddress = transfer.token_address || undefined;
 
+  // Parse token amount (Nansen returns as string)
+  const tokenAmount = transfer.transfer_amount ? parseFloat(transfer.transfer_amount) : undefined;
+
   return {
     id,
     ts: new Date(transfer.block_timestamp).getTime(),
     chain,
     movementType: classifyTransferType(transfer),
     amountUsd: transfer.transfer_value_usd,
+    tokenAmount,
     assetSymbol,
     assetAddress,
     fromAddress: transfer.from_address,

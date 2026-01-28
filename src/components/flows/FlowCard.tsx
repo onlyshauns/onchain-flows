@@ -11,14 +11,14 @@ import {
   getFlowTypeEmoji,
   formatFlowType,
 } from '@/lib/utils/formatting';
-import { getExplorerUrl } from '@/lib/utils/chains';
+import { getNansenTxUrl } from '@/lib/utils/chains';
 
 interface FlowCardProps {
   flow: Flow;
 }
 
 export function FlowCard({ flow }: FlowCardProps) {
-  const explorerUrl = getExplorerUrl(flow.chain, flow.txHash);
+  const nansenUrl = getNansenTxUrl(flow.chain, flow.txHash);
   const emoji = getFlowTypeEmoji(flow.type, flow.metadata?.category);
 
   return (
@@ -109,12 +109,12 @@ export function FlowCard({ flow }: FlowCardProps) {
 
       <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
         <a
-          href={explorerUrl}
+          href={nansenUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
         >
-          <span>View on Explorer</span>
+          <span>View on Nansen</span>
           <ExternalLink className="w-3 h-3" />
         </a>
         <ShareButton flow={flow} />

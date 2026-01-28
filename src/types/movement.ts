@@ -37,7 +37,8 @@ export interface Movement {
   confidence: Confidence;
 
   // Value
-  amountUsd: number;             // Always USD value, NEVER token amount
+  amountUsd: number;             // Always USD value
+  tokenAmount?: number;          // Raw token amount (if available from source)
   assetSymbol?: string;          // 'USDC', 'ETH', 'SOL', etc.
   assetAddress?: string;         // Contract address (if available)
 

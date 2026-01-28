@@ -101,7 +101,7 @@ export default function Home() {
     type: m.movementType === 'swap' ? 'whale-movement' : 'whale-movement',
     chain: m.chain,
     timestamp: m.ts,
-    amount: m.amountUsd / 1000, // FlowList expects token amount, we'll fix display
+    amount: m.tokenAmount || 0, // Use real token amount from Nansen
     amountUsd: m.amountUsd,
     token: {
       symbol: m.assetSymbol || 'UNKNOWN',

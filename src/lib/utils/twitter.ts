@@ -77,20 +77,19 @@ export function generateTweetText(flow: Flow): string {
   const toName = cleanEntityName(flow.to.label, flow.to.address);
   const action = getActionVerb(flow);
 
-  // If we have a reasonable token amount, show it (not the fake USD/1000 amount)
-  // Otherwise, just show USD value with "worth of [TOKEN]"
+  // Format amount intelligently
   let amountText = '';
-  if (flow.amount > 100 && flow.amountUsd / flow.amount > 0.01 && flow.amountUsd / flow.amount < 100000) {
-    // Looks like a real token amount (reasonable price per token)
+  if (flow.amount > 0) {
+    // We have a real token amount from Nansen
     const tokenAmount = formatTokenAmount(flow.amount);
     amountText = `${tokenAmount} $${token} (${usdAmount})`;
   } else {
-    // Just show USD value
+    // No token amount available, just show USD value
     amountText = `${usdAmount} worth of $${token}`;
   }
 
-  // Whale Alert style: "🚨 Whale Alert: [Entity] just [action] [amount] to [destination]"
-  return `🚨 Whale Alert: ${fromName} just ${action} ${amountText} to ${toName} on ${chain}
+  // Whale Alert style: "🐋 Whale Alert: [Entity] just [action] [amount] to [destination]"
+  return `🐋 Whale Alert: ${fromName} just ${action} ${amountText} to ${toName} on ${chain}
 
 Track on Nansen →`;
 }
