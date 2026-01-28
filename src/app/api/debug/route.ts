@@ -68,15 +68,17 @@ export async function GET(request: NextRequest) {
           limit: 10,
         });
         logs.push(`12. ✅ Nansen API working! Got ${response.data?.length || 0} transfers`);
+
+        // Log ALL fields from first transfer to see what we're getting
+        if (response.data?.[0]) {
+          logs.push(`13. Raw Nansen fields: ${Object.keys(response.data[0]).join(', ')}`);
+        }
+
         nansenResult = {
           status: 'success',
           transferCount: response.data?.length || 0,
-          sampleTransfer: response.data?.[0] ? {
-            hash: response.data[0].transaction_hash.substring(0, 20) + '...',
-            from: response.data[0].from_address_name || 'Unknown',
-            to: response.data[0].to_address_name || 'Unknown',
-            valueUsd: response.data[0].transfer_value_usd,
-          } : null,
+          sampleTransfer: response.data?.[0] || null,
+          rawSample: response.data?.[0],
         };
       } catch (error) {
         logs.push(`12. ❌ Nansen API error: ${error instanceof Error ? error.message : String(error)}`);
