@@ -84,10 +84,10 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
   },
 };
 
-export const DEFAULT_CHAINS: Chain[] = ['solana', 'ethereum', 'base', 'hyperliquid'];
+export const DEFAULT_CHAINS: Chain[] = ['ethereum', 'base'];
 
-// Available chains for selection (limited to main 4)
-export const AVAILABLE_CHAINS: Chain[] = ['solana', 'ethereum', 'base', 'hyperliquid'];
+// Available chains - only chains supported by Nansen DEX trades endpoint
+export const AVAILABLE_CHAINS: Chain[] = ['ethereum', 'base', 'arbitrum', 'optimism', 'polygon'];
 
 export const getAllChains = (): Chain[] => {
   return Object.keys(CHAIN_CONFIGS).sort(

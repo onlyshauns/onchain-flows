@@ -39,8 +39,17 @@ export async function GET(request: NextRequest) {
   try {
     const client = getNansenClient();
 
-    // Use dedicated Smart Money DEX Trades endpoint
-    const chainList = chains.map(c => c.toLowerCase() as Chain);
+    // DEX Trades endpoint only supports these chains
+    const supportedChains = ['ethereum', 'base', 'arbitrum', 'optimism', 'polygon'];
+    const chainList = chains
+      .map(c => c.toLowerCase() as Chain)
+      .filter(c => supportedChains.includes(c));
+
+    if (chainList.length === 0) {
+      console.log('[API] No supported chains selected for Smart Money DEX trades');
+      return NextResponse.json({ flows: [], total: 0, source: 'None' });
+    }
+
     console.log('[API] Fetching Smart Money DEX trades for chains:', chainList);
 
     try {
