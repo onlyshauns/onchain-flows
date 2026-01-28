@@ -53,6 +53,8 @@ export async function GET(request: NextRequest) {
             limit: 100,
           });
 
+          console.log(`[DEBUG] ${chain} ${tokenAddress}: Response received, data length: ${response.data?.length || 0}`);
+
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen (Labeled Wallets $100K+)';
 
@@ -78,11 +80,12 @@ export async function GET(request: NextRequest) {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
-              // Only include if at least one side has a label
-              if (fromLabel === 'Unknown Wallet' && toLabel === 'Unknown Wallet') {
-                filteredUnknown++;
-                return;
-              }
+              // TEMPORARILY DISABLED: Only include if at least one side has a label
+              // TODO: Re-enable once we confirm data is flowing
+              // if (fromLabel === 'Unknown Wallet' && toLabel === 'Unknown Wallet') {
+              //   filteredUnknown++;
+              //   return;
+              // }
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {
