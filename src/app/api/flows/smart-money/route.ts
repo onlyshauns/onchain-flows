@@ -39,75 +39,63 @@ export async function GET(request: NextRequest) {
   try {
     const client = getNansenClient();
 
-    for (const chainParam of chains) {
-      const chain = chainParam.toLowerCase() as Chain;
-      const popularTokens = client.getPopularTokens(chain);
+    // Use dedicated Smart Money DEX Trades endpoint
+    const chainList = chains.map(c => c.toLowerCase() as Chain);
+    console.log('[API] Fetching Smart Money DEX trades for chains:', chainList);
 
-      if (popularTokens.length === 0) continue;
+    try {
+      const response = await client.getDEXTrades(chainList, {
+        minValueUsd: 10000, // $10k+ for Smart Trader activity
+        maxValueUsd: 1000000, // Up to $1M (distinct from whale movements)
+        includeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader'],
+        limit: 100,
+      });
 
-      for (const tokenAddress of popularTokens.slice(0, 2)) {
-        try {
-          // Use Nansen's proper label filtering for Smart Money
-          console.log(`[API] Fetching Smart Money for ${chain}, token: ${tokenAddress}`);
-          const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 10000, // $10k+ for Smart Trader activity
-            limit: 100,
-            fromIncludeSmartMoneyLabels: ['Smart Trader'],
-            toIncludeSmartMoneyLabels: ['Smart Trader'],
+      console.log('[API] Got DEX trades response, data length:', response.data?.length || 0);
+
+      if (response.data && response.data.length > 0) {
+        dataSource = 'Nansen (Smart Money DEX Trades)';
+
+        response.data.forEach((trade) => {
+          const traderLabel = trade.trader_label || trade.smart_money_label || 'Unknown Wallet';
+
+          // Extract chain from trade
+          const chain = trade.chain.toLowerCase() as Chain;
+
+          allFlows.push({
+            id: trade.transaction_hash,
+            type: 'smart-money',
+            chain,
+            timestamp: new Date(trade.block_timestamp).getTime(),
+            amount: parseFloat(trade.token_bought_amount),
+            amountUsd: trade.trade_value_usd,
+            token: {
+              symbol: trade.token_bought_symbol || 'Unknown',
+              address: trade.token_bought_address || '',
+              name: trade.token_bought_name || trade.token_bought_symbol || 'Unknown Token',
+            },
+            from: {
+              address: trade.trader_address,
+              label: traderLabel,
+            },
+            to: {
+              address: trade.token_bought_address,
+              label: `Bought via ${trade.dex_name || 'DEX'}`,
+            },
+            txHash: trade.transaction_hash,
+            metadata: {
+              category: 'Smart Money',
+              dex: trade.dex_name,
+              tokenSold: trade.token_sold_symbol,
+            },
           });
-          console.log(`[API] Got response for ${tokenAddress}, data length: ${response.data?.length || 0}`);
-
-          if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Smart Money Label)';
-
-            response.data.forEach((transfer) => {
-              // Filter to $10k-$1M range (distinct from whale $1M+ movements)
-              if (transfer.transfer_value_usd > 1000000) {
-                return;
-              }
-
-              const fromLabel = transfer.from_address_label || 'Unknown Wallet';
-              const toLabel = transfer.to_address_label || 'Unknown Wallet';
-
-              // Filter out same-entity transfers
-              if (isSameEntityTransfer(fromLabel, toLabel)) {
-                return;
-              }
-
-              allFlows.push({
-                id: transfer.transaction_hash,
-                type: 'whale-movement',
-                chain,
-                timestamp: new Date(transfer.block_timestamp).getTime(),
-                amount: parseFloat(transfer.transfer_amount),
-                amountUsd: transfer.transfer_value_usd,
-                token: {
-                  symbol: transfer.token_symbol || 'Unknown',
-                  address: transfer.token_address || '',
-                  name: transfer.token_name || transfer.token_symbol || 'Unknown Token',
-                },
-                from: {
-                  address: transfer.from_address,
-                  label: fromLabel,
-                },
-                to: {
-                  address: transfer.to_address,
-                  label: toLabel,
-                },
-                txHash: transfer.transaction_hash,
-                metadata: {
-                  category: 'Smart Money',
-                },
-              });
-            });
-          }
-        } catch (error) {
-          console.error(`[API] Nansen error for ${chain}, token ${tokenAddress}:`, error);
-          if (error instanceof Error) {
-            console.error('[API] Error message:', error.message);
-            console.error('[API] Error stack:', error.stack);
-          }
-        }
+        });
+      }
+    } catch (error) {
+      console.error('[API] Nansen DEX trades error:', error);
+      if (error instanceof Error) {
+        console.error('[API] Error message:', error.message);
+        console.error('[API] Error stack:', error.stack);
       }
     }
   } catch (error) {

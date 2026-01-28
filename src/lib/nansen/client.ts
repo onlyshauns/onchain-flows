@@ -5,6 +5,7 @@ import {
   NansenFlowsResponse,
   NansenAddressTransactionsResponse,
   NansenAddressLabelsResponse,
+  NansenDEXTradesResponse,
   NansenChain,
   NansenTimeframe,
   NansenHolderLabel,
@@ -174,6 +175,67 @@ export class NansenClient {
     };
 
     return this.post<NansenTransfersResponse>(`${NANSEN_API_V1}/tgm/transfers`, body);
+  }
+
+  /**
+   * Get Smart Money DEX trades (POST /api/v1/smart-money/dex-trades)
+   */
+  async getDEXTrades(
+    chains: Chain[],
+    options: {
+      minValueUsd?: number;
+      maxValueUsd?: number;
+      includeSmartMoneyLabels?: string[];
+      limit?: number;
+    } = {}
+  ): Promise<NansenDEXTradesResponse> {
+    const nansenChains = chains.map(chain => CHAIN_MAP[chain]);
+
+    const filters: any = {};
+
+    if (options.minValueUsd !== undefined || options.maxValueUsd !== undefined) {
+      filters.trade_value_usd = {};
+      if (options.minValueUsd !== undefined) {
+        filters.trade_value_usd.min = options.minValueUsd;
+      }
+      if (options.maxValueUsd !== undefined) {
+        filters.trade_value_usd.max = options.maxValueUsd;
+      }
+    }
+
+    if (options.includeSmartMoneyLabels && options.includeSmartMoneyLabels.length > 0) {
+      filters.include_smart_money_labels = options.includeSmartMoneyLabels;
+    }
+
+    console.log('[Nansen] DEX Trades Request:', {
+      chains: nansenChains,
+      filters,
+      limit: options.limit || 100,
+    });
+
+    const body: any = {
+      chains: nansenChains,
+      pagination: {
+        page: 1,
+        per_page: options.limit || 100,
+      },
+      order_by: [
+        {
+          field: 'trade_value_usd',
+          direction: 'DESC',
+        },
+        {
+          field: 'block_timestamp',
+          direction: 'DESC',
+        },
+      ],
+    };
+
+    if (Object.keys(filters).length > 0) {
+      body.filters = filters;
+    }
+
+    return this.post<NansenDEXTradesResponse>(`${NANSEN_API_V1}/smart-money/dex-trades`, body);
   }
 
   /**

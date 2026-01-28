@@ -118,6 +118,36 @@ export interface NansenAddressLabelsResponse {
   data: NansenAddressLabel[];
 }
 
+// Smart Money DEX Trades Response (POST /api/v1/smart-money/dex-trades)
+export interface NansenDEXTrade {
+  chain: string;
+  transaction_hash: string;
+  block_timestamp: string;
+  trader_address: string;
+  trader_label?: string;
+  smart_money_label?: string;
+  token_bought_address: string;
+  token_bought_symbol: string;
+  token_bought_name?: string;
+  token_bought_amount: string;
+  token_sold_address: string;
+  token_sold_symbol: string;
+  token_sold_name?: string;
+  token_sold_amount: string;
+  trade_value_usd: number;
+  dex_name?: string;
+  router_address?: string;
+}
+
+export interface NansenDEXTradesResponse {
+  data: NansenDEXTrade[];
+  pagination: {
+    page: number;
+    per_page: number;
+    is_last_page: boolean;
+  };
+}
+
 // Common types
 export type NansenChain = 'ethereum' | 'solana' | 'base' | 'arbitrum' | 'optimism' | 'polygon' | 'avalanche' | 'bnb-chain';
 export type NansenTimeframe = '5m' | '1h' | '6h' | '12h' | '1d' | '7d';
