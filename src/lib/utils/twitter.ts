@@ -70,26 +70,26 @@ function formatTokenAmount(amount: number): string {
  */
 export function generateTweetText(flow: Flow): string {
   const chain = getChainConfig(flow.chain).name;
-  const usdAmount = formatUsd(flow.amountUsd, 1);
+  const usdAmount = formatUsd(flow.amountUsd, 0); // No decimals for cleaner look
   const token = flow.token.symbol;
 
   const fromName = cleanEntityName(flow.from.label, flow.from.address);
   const toName = cleanEntityName(flow.to.label, flow.to.address);
-  const action = getActionVerb(flow);
 
   // Format amount intelligently
-  let amountText = '';
+  let tokenAmountText = '';
   if (flow.amount > 0) {
     // We have a real token amount from Nansen
     const tokenAmount = formatTokenAmount(flow.amount);
-    amountText = `${tokenAmount} $${token} (${usdAmount})`;
+    tokenAmountText = `${tokenAmount} in ${token}`;
   } else {
-    // No token amount available, just show USD value
-    amountText = `${usdAmount} worth of $${token}`;
+    // No token amount available, use USD only
+    tokenAmountText = usdAmount;
   }
 
-  // Whale Alert style: "🐋 Whale Alert: [Entity] just [action] [amount] to [destination]"
-  return `🐋 Whale Alert: ${fromName} just ${action} ${amountText} to ${toName} on ${chain}
+  // New format: WHALE MOVES on new line, amount + USD, from/to
+  return `🚨 WHALE MOVES
+${tokenAmountText} (${usdAmount}) was sent from ${fromName} to ${toName} on ${chain}
 
 Track on Nansen →`;
 }
