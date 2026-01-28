@@ -48,12 +48,14 @@ export async function GET(request: NextRequest) {
       for (const tokenAddress of popularTokens) {
         try {
           // Use Nansen's proper label filtering for Smart Money
+          console.log(`[API] Fetching Smart Money for ${chain}, token: ${tokenAddress}`);
           const response = await client.getTokenTransfers(chain, tokenAddress, {
             minValueUsd: 5000,
             limit: 100,
-            fromIncludeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader', '180D Smart Trader'],
-            toIncludeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader', '180D Smart Trader'],
+            fromIncludeSmartMoneyLabels: ['Smart Trader'],
+            toIncludeSmartMoneyLabels: ['Smart Trader'],
           });
+          console.log(`[API] Got response for ${tokenAddress}, data length: ${response.data?.length || 0}`);
 
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen (Smart Money Label)';
