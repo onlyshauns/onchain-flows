@@ -30,10 +30,9 @@ export default function Home() {
 
         // Map tab to API endpoint
         const endpointMap: Record<string, string> = {
-          trending: '/api/flows/trending',
+          whale: '/api/flows/whale-movements',
           'public-figures': '/api/flows/public-figures',
           'fund-movements': '/api/flows/fund-movements',
-          whale: '/api/flows/whale-movements',
           'smart-money': '/api/flows/smart-money',
           defi: '/api/flows/defi',
           tokens: '/api/flows/token-launches',

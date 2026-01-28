@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
 import { Chain, Flow } from '@/types/flows';
 
-/**
- * Check if a transfer is between the same entity
- */
 function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   if (!fromLabel || !toLabel || fromLabel === 'Unknown Wallet' || toLabel === 'Unknown Wallet') {
     return false;
@@ -29,6 +26,22 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   return false;
 }
 
+function isSmartMoney(label: string): boolean {
+  const l = label.toLowerCase();
+  const keywords = [
+    'smart',
+    'trader',
+    'dex trader',
+    'nft trader',
+    'defi early',
+    'lp expert',
+    'profitable',
+    'alpha',
+  ];
+
+  return keywords.some(keyword => l.includes(keyword));
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -50,32 +63,26 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Use label filtering to get only Smart Trader transfers
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 150000, // $150k+ for smart money
-            limit: 30,
-            labelType: 'smart_money',
-            includeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader'],
+            minValueUsd: 150000,
+            limit: 50,
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Smart Money Filter)';
-
+            dataSource = 'Nansen';
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
-              // Only include if at least one side is smart money
-              const hasSmartMoney =
-                fromLabel.toLowerCase().includes('smart') ||
-                fromLabel.toLowerCase().includes('trader') ||
-                toLabel.toLowerCase().includes('smart') ||
-                toLabel.toLowerCase().includes('trader');
-
-              if (!hasSmartMoney) return;
+              // Only include if involves smart money
+              if (!isSmartMoney(fromLabel) && !isSmartMoney(toLabel)) {
+                return;
+              }
 
               // Filter out same-entity transfers
-              if (isSameEntityTransfer(fromLabel, toLabel)) return;
+              if (isSameEntityTransfer(fromLabel, toLabel)) {
+                return;
+              }
 
               allFlows.push({
                 id: transfer.transaction_hash,
@@ -113,7 +120,6 @@ export async function GET(request: NextRequest) {
     console.error('[API] Nansen client error:', error);
   }
 
-  // Sort by USD value and timestamp
   allFlows.sort((a, b) => {
     if (Math.abs(a.amountUsd - b.amountUsd) > 100000) {
       return b.amountUsd - a.amountUsd;

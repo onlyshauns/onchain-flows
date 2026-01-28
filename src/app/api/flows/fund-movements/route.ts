@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
 import { Chain, Flow } from '@/types/flows';
 
-/**
- * Check if a transfer is between the same entity
- */
 function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   if (!fromLabel || !toLabel || fromLabel === 'Unknown Wallet' || toLabel === 'Unknown Wallet') {
     return false;
@@ -29,6 +26,35 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   return false;
 }
 
+function isFund(label: string): boolean {
+  const l = label.toLowerCase();
+  const keywords = [
+    'fund',
+    'capital',
+    'ventures',
+    'investment',
+    'a16z',
+    'andreessen',
+    'paradigm',
+    'pantera',
+    'polychain',
+    'coinbase ventures',
+    'framework',
+    'sequoia',
+    'tiger global',
+    'dragonfly',
+    'jump',
+    'alameda',
+    'three arrows',
+    '3ac',
+    'galaxy',
+    'dcg',
+    'grayscale',
+  ];
+
+  return keywords.some(keyword => l.includes(keyword));
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -50,30 +76,26 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Use label filtering to get only Fund transfers
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 100000, // $100k+ for institutional funds
-            limit: 30,
-            labelType: 'smart_money',
-            includeSmartMoneyLabels: ['Fund'],
+            minValueUsd: 100000,
+            limit: 50,
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Fund Filter)';
-
+            dataSource = 'Nansen';
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
-              // Only include if at least one side is a fund
-              const hasFund =
-                fromLabel.toLowerCase().includes('fund') ||
-                toLabel.toLowerCase().includes('fund');
-
-              if (!hasFund) return;
+              // Only include if involves a fund
+              if (!isFund(fromLabel) && !isFund(toLabel)) {
+                return;
+              }
 
               // Filter out same-entity transfers
-              if (isSameEntityTransfer(fromLabel, toLabel)) return;
+              if (isSameEntityTransfer(fromLabel, toLabel)) {
+                return;
+              }
 
               allFlows.push({
                 id: transfer.transaction_hash,
@@ -111,7 +133,6 @@ export async function GET(request: NextRequest) {
     console.error('[API] Nansen client error:', error);
   }
 
-  // Sort by USD value and timestamp
   allFlows.sort((a, b) => {
     if (Math.abs(a.amountUsd - b.amountUsd) > 100000) {
       return b.amountUsd - a.amountUsd;

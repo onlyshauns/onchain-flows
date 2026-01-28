@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
 import { Chain, Flow } from '@/types/flows';
 
-/**
- * Check if a transfer is between the same entity
- */
 function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   if (!fromLabel || !toLabel || fromLabel === 'Unknown Wallet' || toLabel === 'Unknown Wallet') {
     return false;
@@ -29,6 +26,28 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   return false;
 }
 
+function isPublicFigure(label: string): boolean {
+  const l = label.toLowerCase();
+  const keywords = [
+    'vitalik',
+    'buterin',
+    'justin',
+    'sun',
+    'cz',
+    'changpeng',
+    'zhao',
+    'do kwon',
+    'brian armstrong',
+    'sam bankman',
+    'sbf',
+    'michael saylor',
+    'elon musk',
+    'jack dorsey',
+  ];
+
+  return keywords.some(keyword => l.includes(keyword));
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -50,30 +69,26 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Use label filtering to get only Public Figure transfers
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 50000, // $50k+ for public figures
-            limit: 30,
-            labelType: 'smart_money',
-            includeSmartMoneyLabels: ['Public Figure'],
+            minValueUsd: 50000,
+            limit: 50,
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Public Figure Filter)';
-
+            dataSource = 'Nansen';
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
-              // Only include if at least one side is a public figure
-              const hasPublicFigure =
-                fromLabel.toLowerCase().includes('public') ||
-                toLabel.toLowerCase().includes('public');
-
-              if (!hasPublicFigure) return;
+              // Only include if involves a public figure
+              if (!isPublicFigure(fromLabel) && !isPublicFigure(toLabel)) {
+                return;
+              }
 
               // Filter out same-entity transfers
-              if (isSameEntityTransfer(fromLabel, toLabel)) return;
+              if (isSameEntityTransfer(fromLabel, toLabel)) {
+                return;
+              }
 
               allFlows.push({
                 id: transfer.transaction_hash,
@@ -111,7 +126,6 @@ export async function GET(request: NextRequest) {
     console.error('[API] Nansen client error:', error);
   }
 
-  // Sort by USD value and timestamp
   allFlows.sort((a, b) => {
     if (Math.abs(a.amountUsd - b.amountUsd) > 50000) {
       return b.amountUsd - a.amountUsd;
