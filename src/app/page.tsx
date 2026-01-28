@@ -13,19 +13,17 @@ export default function Home() {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Clear flows immediately when tab or chains change
-  useEffect(() => {
-    setFlows([]);
-    setIsLoading(true);
-  }, [activeTab, selectedChains]);
-
   // Fetch flows based on active tab and selected chains
   useEffect(() => {
     let isCancelled = false;
+    let interval: NodeJS.Timeout;
+
+    // Clear flows immediately and show loading
+    setFlows([]);
+    setIsLoading(true);
 
     const fetchFlows = async () => {
       try {
-        setIsLoading(true);
         setIsRefreshing(true);
 
         // Map tab to API endpoint
@@ -44,13 +42,18 @@ export default function Home() {
         const timestamp = Date.now();
         const url = `${endpoint}?chains=${chainsParam}&_t=${timestamp}`;
 
+        console.log(`[Home] Fetching ${activeTab}:`, url);
+
         const response = await fetch(url, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
           },
         });
         const data = await response.json();
+
+        console.log(`[Home] Received ${activeTab}:`, data.total, 'flows');
 
         if (!isCancelled) {
           setFlows(data.flows || []);
@@ -60,6 +63,7 @@ export default function Home() {
       } catch (error) {
         console.error('Error fetching flows:', error);
         if (!isCancelled) {
+          setFlows([]);
           setIsLoading(false);
         }
       } finally {
@@ -69,10 +73,11 @@ export default function Home() {
       }
     };
 
+    // Initial fetch
     fetchFlows();
 
     // Set up auto-refresh every 30 seconds
-    const interval = setInterval(fetchFlows, 30000);
+    interval = setInterval(fetchFlows, 30000);
 
     return () => {
       isCancelled = true;
@@ -87,7 +92,7 @@ export default function Home() {
       <ChainFilter />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <FlowList flows={flows} isLoading={isLoading} />
+        <FlowList key={activeTab} flows={flows} isLoading={isLoading} />
       </main>
     </div>
   );
