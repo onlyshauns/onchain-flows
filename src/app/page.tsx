@@ -28,16 +28,23 @@ export default function Home() {
           'public-figures': '/api/flows/public-figures',
           'fund-movements': '/api/flows/fund-movements',
           whale: '/api/flows/whale-movements',
-          'smart-money': '/api/flows/whale-movements', // Reusing for now
-          defi: '/api/flows/whale-movements', // Reusing for now
-          tokens: '/api/flows/token-launches', // Using DexScreener!
+          'smart-money': '/api/flows/smart-money',
+          defi: '/api/flows/defi',
+          tokens: '/api/flows/token-launches',
         };
 
         const endpoint = endpointMap[activeTab];
         const chainsParam = selectedChains.join(',');
-        const url = `${endpoint}?chains=${chainsParam}`;
+        // Add timestamp to prevent caching
+        const timestamp = Date.now();
+        const url = `${endpoint}?chains=${chainsParam}&_t=${timestamp}`;
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
         const data = await response.json();
 
         if (!isCancelled) {
