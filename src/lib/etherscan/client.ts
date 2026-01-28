@@ -58,20 +58,33 @@ export class EtherscanClient {
 
     try {
       console.log('[Etherscan] Fetching token transfers for:', address.substring(0, 10) + '...');
+      console.log('[Etherscan] URL:', url.replace(this.apiKey, 'HIDDEN'));
 
       const response = await fetch(url);
       const data: EtherscanResponse = await response.json();
 
+      console.log('[Etherscan] API Response status:', data.status);
+      console.log('[Etherscan] API Response message:', data.message);
+
       if (data.status === '0' && data.message !== 'No transactions found') {
         console.error('[Etherscan] API error:', data.message);
+        console.error('[Etherscan] Full response:', JSON.stringify(data).substring(0, 500));
         return [];
       }
 
       if (!Array.isArray(data.result)) {
+        console.log('[Etherscan] Result is not an array:', typeof data.result);
         return [];
       }
 
       console.log('[Etherscan] Found transactions:', data.result.length);
+      if (data.result.length > 0) {
+        console.log('[Etherscan] First transaction:', {
+          hash: data.result[0].hash.substring(0, 20) + '...',
+          symbol: data.result[0].tokenSymbol,
+          timestamp: new Date(parseInt(data.result[0].timeStamp) * 1000).toISOString(),
+        });
+      }
       return data.result;
     } catch (error) {
       console.error('[Etherscan] Error fetching transfers:', error);
