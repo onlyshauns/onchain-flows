@@ -23,11 +23,13 @@ export default function Home() {
 
         // Map tab to API endpoint
         const endpointMap: Record<string, string> = {
+          trending: '/api/flows/trending',
+          'public-figures': '/api/flows/public-figures',
+          'fund-movements': '/api/flows/fund-movements',
           whale: '/api/flows/whale-movements',
+          'smart-money': '/api/flows/whale-movements', // Reusing for now
           defi: '/api/flows/whale-movements', // Reusing for now
           tokens: '/api/flows/whale-movements', // Reusing for now
-          'smart-money': '/api/flows/whale-movements', // Reusing for now
-          trending: '/api/flows/whale-movements', // Reusing for now
         };
 
         const endpoint = endpointMap[activeTab];

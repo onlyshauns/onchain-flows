@@ -21,7 +21,7 @@ interface FlowsContextType {
 const FlowsContext = createContext<FlowsContextType | undefined>(undefined);
 
 export function FlowsProvider({ children }: { children: ReactNode }) {
-  const [activeTab, setActiveTab] = useState<TabType>('whale');
+  const [activeTab, setActiveTab] = useState<TabType>('trending');
   const [selectedChains, setSelectedChains] = useState<Chain[]>(DEFAULT_CHAINS);
   const [refreshInterval, setRefreshInterval] = useState(30000); // 30 seconds
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -35,7 +35,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
     const tabParam = params.get('tab');
     const chainsParam = params.get('chains');
 
-    if (tabParam && ['whale', 'defi', 'tokens', 'smart-money', 'trending'].includes(tabParam)) {
+    if (tabParam && ['trending', 'public-figures', 'fund-movements', 'whale', 'defi', 'tokens', 'smart-money'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
 

@@ -19,7 +19,7 @@ interface FlowCardProps {
 
 export function FlowCard({ flow }: FlowCardProps) {
   const explorerUrl = getExplorerUrl(flow.chain, flow.txHash);
-  const emoji = getFlowTypeEmoji(flow.type);
+  const emoji = getFlowTypeEmoji(flow.type, flow.metadata?.category);
 
   return (
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:shadow-md transition-shadow">

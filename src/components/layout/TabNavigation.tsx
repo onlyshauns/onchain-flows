@@ -5,11 +5,13 @@ import { useFlows } from '@/context/FlowsContext';
 import clsx from 'clsx';
 
 const TABS: { id: TabType; label: string; emoji: string }[] = [
+  { id: 'trending', label: "What's Hot", emoji: '🔥' },
+  { id: 'public-figures', label: 'Public Figures', emoji: '👤' },
+  { id: 'fund-movements', label: 'Fund Movements', emoji: '🏦' },
   { id: 'whale', label: 'Whale Movements', emoji: '🐋' },
+  { id: 'smart-money', label: 'Smart Money', emoji: '🧠' },
   { id: 'defi', label: 'DeFi Activities', emoji: '💰' },
   { id: 'tokens', label: 'Token Launches', emoji: '🚀' },
-  { id: 'smart-money', label: 'Smart Money', emoji: '🧠' },
-  { id: 'trending', label: "What's Hot", emoji: '🔥' },
 ];
 
 export function TabNavigation() {

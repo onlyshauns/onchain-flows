@@ -33,73 +33,69 @@ function transformNansenFlow(data: NansenFlowData): Flow {
 }
 
 export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
+  const limit = parseInt(searchParams.get('limit') || '50');
+
+  // Always return mock data for now since we're still setting up Nansen API
+  console.log('[API] Returning mock data for chains:', chains);
+
   try {
-    const { searchParams } = new URL(request.url);
-    const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
-    const limit = parseInt(searchParams.get('limit') || '50');
+    // Uncomment this when Nansen API is fully configured
+    // const client = getNansenClient();
+    // const flowPromises = chains.map(async (chain) => {
+    //   const response = await client.getWhaleMovements(chain as Chain, limit);
+    //   return response.data.map(transformNansenFlow);
+    // });
+    // const flowsArrays = await Promise.all(flowPromises);
+    // const allFlows = flowsArrays.flat();
 
-    // Get Nansen client
-    const client = getNansenClient();
-
-    // Fetch flows from all requested chains in parallel
-    const flowPromises = chains.map(async (chain) => {
-      try {
-        const response = await client.getWhaleMovements(chain as Chain, limit);
-        return response.data.map(transformNansenFlow);
-      } catch (error) {
-        console.error(`Error fetching whale movements for ${chain}:`, error);
-        return [];
-      }
-    });
-
-    const flowsArrays = await Promise.all(flowPromises);
-    const allFlows = flowsArrays.flat();
-
-    // Sort by timestamp (newest first)
-    allFlows.sort((a, b) => b.timestamp - a.timestamp);
-
-    // Return with cache headers
-    return NextResponse.json(
-      {
-        flows: allFlows.slice(0, limit),
-        total: allFlows.length,
-      },
-      {
-        headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
-        },
-      }
-    );
+    // For now, use mock data
+    throw new Error('Using mock data for development');
   } catch (error) {
     console.error('Whale movements API error:', error);
 
-    // Return mock data for development if Nansen API fails
-    const mockFlows: Flow[] = [
-      {
-        id: 'mock-1',
+    // Generate mock data based on selected chains
+    const mockFlows: Flow[] = [];
+
+    // Add mock flows for each selected chain
+    chains.forEach((chain, index) => {
+      const chainLower = chain.toLowerCase() as Chain;
+
+      // Whale movement
+      mockFlows.push({
+        id: `mock-whale-${chainLower}-${index}`,
         type: 'whale-movement',
-        chain: 'ethereum',
-        timestamp: Date.now() - 300000,
-        amount: 5000000,
-        amountUsd: 5000000,
-        token: { symbol: 'USDC', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' },
-        from: { address: '0x1234567890abcdef1234567890abcdef12345678', label: 'Whale Wallet' },
-        to: { address: '0xabcdef1234567890abcdef1234567890abcdef12', label: 'Binance' },
-        txHash: '0xmock1',
-      },
-      {
-        id: 'mock-2',
+        chain: chainLower,
+        timestamp: Date.now() - (index * 600000 + 300000),
+        amount: 5000000 + (index * 1000000),
+        amountUsd: 5000000 + (index * 1000000),
+        token: chainLower === 'solana'
+          ? { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112' }
+          : chainLower === 'ethereum'
+          ? { symbol: 'USDC', address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' }
+          : { symbol: 'USDC', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913' },
+        from: { address: '0x' + '1234567890abcdef'.repeat(4), label: 'Whale Wallet' },
+        to: { address: '0x' + 'abcdef1234567890'.repeat(4), label: 'Binance' },
+        txHash: `0xmock-whale-${chainLower}-${index}`,
+      });
+
+      // Smart money move
+      mockFlows.push({
+        id: `mock-smart-${chainLower}-${index}`,
         type: 'whale-movement',
-        chain: 'solana',
-        timestamp: Date.now() - 600000,
+        chain: chainLower,
+        timestamp: Date.now() - (index * 600000 + 450000),
         amount: 2500000,
         amountUsd: 2500000,
-        token: { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112' },
-        from: { address: 'ABC123XYZ789', label: 'Smart Money' },
-        to: { address: 'XYZ789ABC123' },
-        txHash: 'mock2',
-      },
-    ];
+        token: chainLower === 'solana'
+          ? { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112' }
+          : { symbol: 'ETH', address: '0x0000000000000000000000000000000000000000' },
+        from: { address: '0x' + 'abc123def456'.repeat(5), label: 'Smart Money Trader' },
+        to: { address: '0x' + 'def456abc123'.repeat(5), label: 'DeFi Protocol' },
+        txHash: `0xmock-smart-${chainLower}-${index}`,
+      });
+    });
 
     return NextResponse.json(
       {

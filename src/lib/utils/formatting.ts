@@ -59,9 +59,17 @@ export function formatTimestamp(timestamp: number): string {
 }
 
 /**
- * Get emoji for flow type
+ * Get emoji for flow type and category
  */
-export function getFlowTypeEmoji(flowType: string): string {
+export function getFlowTypeEmoji(flowType: string, category?: string): string {
+  // Category-specific emojis
+  if (category) {
+    if (category.includes('Public Figure')) return '👤';
+    if (category.includes('Institutional') || category.includes('Treasury')) return '🏦';
+    if (category.includes('Trending')) return '🔥';
+  }
+
+  // Default flow type emojis
   const emojiMap: Record<string, string> = {
     'whale-movement': '🐋',
     'defi-activity': '💰',
