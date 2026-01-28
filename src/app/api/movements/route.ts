@@ -55,82 +55,39 @@ export async function GET(request: NextRequest) {
   try {
     const client = getNansenClient();
 
-    // DEX Trades endpoint only supports these chains
-    const dexChains: Chain[] = ['ethereum', 'base'];
+    console.log('[API] Starting data fetch...');
 
-    // Fetch DEX trades (supports multiple chains in one call)
-    const dexPromise = client.getDEXTrades({
-      chains: dexChains,
-      minUsd: Math.min(...Object.values(THRESHOLDS)),
+    // Simplified: Only fetch ethereum transfers (most reliable)
+    const transfers = await client.getTransfers({
+      chains: ['ethereum'],
+      minUsd: THRESHOLDS.ethereum,
       since,
-      limit: 100,
     }).catch(err => {
-      console.error('[API] Error fetching DEX trades:', err);
+      console.error('[API] Transfer fetch error:', err);
       return [];
     });
 
-    // Fetch transfers (parallel across supported chains)
-    // Note: Only ethereum and base have popular tokens configured
-    const transferChains: Chain[] = ['ethereum', 'base'];
-    const transferPromises = transferChains.map(chain =>
-      client.getTransfers({
-        chains: [chain],
-        minUsd: THRESHOLDS[chain],
-        since,
-      }).catch(err => {
-        console.error(`[API] Error fetching ${chain} transfers:`, err);
-        return [];
-      })
+    console.log(`[API] Fetched ${transfers.length} transfers`);
+
+    // Normalize transfers
+    const normalizedTransfers: Movement[] = transfers.map(t =>
+      normalizeTransfer(t, 'ethereum')
     );
 
-    // Fetch Hyperliquid separately (custom adapter)
-    // For now, return empty array as placeholder
-    const hlPromise = fetchHyperliquidMovements(since, THRESHOLDS.hyperliquid)
-      .catch(err => {
-        console.error('[API] Error fetching Hyperliquid:', err);
-        return [];
-      });
-
-    // Parallel execution - fetch all data sources
-    const [dexResults, ...transferAndHLResults] = await Promise.all([
-      dexPromise,
-      ...transferPromises,
-      hlPromise,
-    ]);
-
-    // Split transfer results and Hyperliquid results
-    const hlResults = transferAndHLResults[transferAndHLResults.length - 1] as Movement[];
-    const transferResultsOnly = transferAndHLResults.slice(0, -1) as NansenTransfer[][];
-    const allTransfers = transferResultsOnly.flat();
-
-    console.log('[API] Data fetched:', {
-      dex: dexResults.length,
-      transfers: allTransfers.length,
-      hyperliquid: hlResults.length,
-    });
-
-    // Normalize all data to Movement format
-    const normalizedTransfers: Movement[] = allTransfers.map(t => {
-      const chain = t.chain.toLowerCase() as Chain;
-      return normalizeTransfer(t, chain);
-    });
-
-    const normalizedDexTrades: Movement[] = dexResults.map(t => normalizeDEXTrade(t));
-
-    let movements: Movement[] = [
-      ...normalizedTransfers,
-      ...normalizedDexTrades,
-      ...hlResults,
-    ];
+    console.log(`[API] Normalized ${normalizedTransfers.length} transfers`);
 
     // Enrichment pipeline
-    movements = movements
+    let movements = normalizedTransfers
       .map(m => entityEnricher.enrichMovement(m))
       .map(m => enrichTags(m))
       .map(m => ({ ...m, confidence: calculateConfidence(m) }));
 
+    console.log(`[API] Enriched ${movements.length} movements`);
+
     // Deduplication (removes duplicates and same-entity movements)
     movements = deduplicator.deduplicate(movements);
+
+    console.log(`[API] After deduplication: ${movements.length} movements`);
 
     // Sort by timestamp (most recent first)
     movements.sort((a, b) => b.ts - a.ts);
