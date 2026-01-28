@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getEtherscanClient } from '@/lib/etherscan/client';
+import { getNansenClient } from '@/lib/nansen/client';
 
 export async function GET(request: NextRequest) {
   const logs: string[] = [];
@@ -56,11 +57,44 @@ export async function GET(request: NextRequest) {
     const oneDayAgo = Math.floor(Date.now() / 1000) - (24 * 60 * 60);
     logs.push(`10. 24h cutoff: ${new Date(oneDayAgo * 1000).toISOString()}`);
 
+    // Test Nansen API
+    let nansenResult: any = null;
+    if (nansenKey) {
+      try {
+        logs.push('11. Testing Nansen API with USDC on Ethereum...');
+        const nansenClient = getNansenClient();
+        const response = await nansenClient.getTokenTransfers('ethereum', '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', {
+          minValueUsd: 100000,
+          limit: 10,
+        });
+        logs.push(`12. ✅ Nansen API working! Got ${response.data?.length || 0} transfers`);
+        nansenResult = {
+          status: 'success',
+          transferCount: response.data?.length || 0,
+          sampleTransfer: response.data?.[0] ? {
+            hash: response.data[0].transaction_hash.substring(0, 20) + '...',
+            from: response.data[0].from_address_name || 'Unknown',
+            to: response.data[0].to_address_name || 'Unknown',
+            valueUsd: response.data[0].transfer_value_usd,
+          } : null,
+        };
+      } catch (error) {
+        logs.push(`12. ❌ Nansen API error: ${error instanceof Error ? error.message : String(error)}`);
+        nansenResult = {
+          status: 'error',
+          error: error instanceof Error ? error.message : String(error),
+        };
+      }
+    } else {
+      logs.push('11. Skipping Nansen test (no API key)');
+    }
+
     return NextResponse.json({
       success: true,
       rawTransactionCount: binanceTxs.length,
       filteredTransactionCount: transactions.length,
       logs,
+      nansenResult,
       etherscanRawResponse: client.lastResponse, // Show raw API response
       sampleRawData: binanceTxs.slice(0, 2).map(tx => ({
         hash: tx.hash.substring(0, 20) + '...',
