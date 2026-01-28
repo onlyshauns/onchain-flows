@@ -170,42 +170,52 @@ export async function GET(request: NextRequest) {
         const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
         const timestamp = parseInt(tx.timeStamp) * 1000;
 
-        // Only include significant transactions
-        if (value > 10000 || tx.tokenSymbol === 'USDC' || tx.tokenSymbol === 'USDT') {
-          const fromLabel = getLabelForAddress(tx.from) || label;
-          const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+        // Calculate USD value (stablecoin assumption for Etherscan data)
+        const valueUsd = value * 1;
 
-          // Filter out same-entity transfers
-          if (isSameEntityTransfer(fromLabel, toLabel)) {
-            return;
-          }
-
-          allFlows.push({
-            id: tx.hash,
-            type: 'whale-movement',
-            chain: 'ethereum',
-            timestamp,
-            amount: value,
-            amountUsd: value * 1, // Stablecoin assumption
-            token: {
-              symbol: tx.tokenSymbol,
-              address: tx.contractAddress,
-              name: tx.tokenName,
-            },
-            from: {
-              address: tx.from,
-              label: fromLabel,
-            },
-            to: {
-              address: tx.to,
-              label: toLabel,
-            },
-            txHash: tx.hash,
-            metadata: {
-              category: 'Whale Movement',
-            },
-          });
+        // Only include whale-sized transactions ($1M+)
+        if (valueUsd < 1000000) {
+          return;
         }
+
+        // Skip if no token symbol
+        if (!tx.tokenSymbol || tx.tokenSymbol === 'Unknown') {
+          return;
+        }
+
+        const fromLabel = getLabelForAddress(tx.from) || label;
+        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+
+        // Filter out same-entity transfers
+        if (isSameEntityTransfer(fromLabel, toLabel)) {
+          return;
+        }
+
+        allFlows.push({
+          id: tx.hash,
+          type: 'whale-movement',
+          chain: 'ethereum',
+          timestamp,
+          amount: value,
+          amountUsd: valueUsd,
+          token: {
+            symbol: tx.tokenSymbol,
+            address: tx.contractAddress,
+            name: tx.tokenName,
+          },
+          from: {
+            address: tx.from,
+            label: fromLabel,
+          },
+          to: {
+            address: tx.to,
+            label: toLabel,
+          },
+          txHash: tx.hash,
+          metadata: {
+            category: 'Whale Movement',
+          },
+        });
       });
     } catch (error) {
       console.error('[API] Etherscan fallback error:', error);

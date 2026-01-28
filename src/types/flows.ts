@@ -1,6 +1,6 @@
 // Core Flow Types
 
-export type Chain = 'ethereum' | 'solana' | 'base' | 'arbitrum' | 'optimism' | 'polygon';
+export type Chain = 'ethereum' | 'solana' | 'base' | 'arbitrum' | 'optimism' | 'polygon' | 'hyperliquid';
 
 export type FlowType = 'whale-movement' | 'defi-activity' | 'token-launch' | 'smart-money';
 

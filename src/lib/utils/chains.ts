@@ -72,12 +72,22 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     explorerUrl: 'https://polygonscan.com/tx/',
     priority: 6,
   },
+  hyperliquid: {
+    id: 'hyperliquid',
+    name: 'Hyperliquid',
+    symbol: 'HYPE',
+    color: '#00D4AA',
+    gradient: 'linear-gradient(135deg, #00D4AA 0%, #00FFC6 100%)',
+    icon: '⚡',
+    explorerUrl: 'https://explorer.hyperliquid.xyz/tx/',
+    priority: 4,
+  },
 };
 
-export const DEFAULT_CHAINS: Chain[] = ['solana', 'ethereum', 'base'];
+export const DEFAULT_CHAINS: Chain[] = ['solana', 'ethereum', 'base', 'hyperliquid'];
 
-// Available chains for selection (limited to main 3)
-export const AVAILABLE_CHAINS: Chain[] = ['solana', 'ethereum', 'base'];
+// Available chains for selection (limited to main 4)
+export const AVAILABLE_CHAINS: Chain[] = ['solana', 'ethereum', 'base', 'hyperliquid'];
 
 export const getAllChains = (): Chain[] => {
   return Object.keys(CHAIN_CONFIGS).sort(
@@ -114,8 +124,13 @@ export const getNansenTxUrl = (chain: Chain, txHash: string): string => {
     arbitrum: 'arbitrum',
     optimism: 'optimism',
     polygon: 'polygon',
+    hyperliquid: 'hyperliquid',
   };
 
   const chainSlug = nansenChainMap[chain] || chain;
+  // For Hyperliquid, use explorer.hyperliquid.xyz instead of Nansen
+  if (chain === 'hyperliquid') {
+    return `https://explorer.hyperliquid.xyz/tx/${txHash}`;
+  }
   return `https://app.nansen.ai/tx/${chainSlug}/${txHash}`;
 };
