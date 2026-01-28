@@ -4,6 +4,46 @@ import { getEtherscanClient } from '@/lib/etherscan/client';
 import { getLabelForAddress } from '@/lib/etherscan/addresses';
 import { Chain, Flow } from '@/types/flows';
 
+/**
+ * Check if a transfer is between the same entity (e.g., Binance to Binance)
+ * Returns true if it's an internal transfer that should be filtered out
+ */
+function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
+  if (!fromLabel || !toLabel || fromLabel === 'Unknown Wallet' || toLabel === 'Unknown Wallet') {
+    return false;
+  }
+
+  const from = fromLabel.toLowerCase();
+  const to = toLabel.toLowerCase();
+
+  // List of entities to check for internal transfers
+  const entities = [
+    'binance',
+    'coinbase',
+    'kraken',
+    'bybit',
+    'okx',
+    'huobi',
+    'kucoin',
+    'bitfinex',
+    'gemini',
+    'bitstamp',
+    'ftx',
+    'gate.io',
+    'crypto.com',
+    'mexc',
+  ];
+
+  // Check if both labels contain the same entity name
+  for (const entity of entities) {
+    if (from.includes(entity) && to.includes(entity)) {
+      return true; // Same entity, filter out
+    }
+  }
+
+  return false;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -34,6 +74,15 @@ export async function GET(request: NextRequest) {
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen';
             response.data.forEach((transfer) => {
+              const fromLabel = transfer.from_address_name || 'Unknown Wallet';
+              const toLabel = transfer.to_address_name || 'Unknown Wallet';
+
+              // Filter out same-entity transfers (high signal, low noise)
+              if (isSameEntityTransfer(fromLabel, toLabel)) {
+                console.log(`[API] Filtering out internal transfer: ${fromLabel} → ${toLabel}`);
+                return;
+              }
+
               allFlows.push({
                 id: transfer.transaction_hash,
                 type: 'whale-movement',
@@ -48,11 +97,11 @@ export async function GET(request: NextRequest) {
                 },
                 from: {
                   address: transfer.from_address,
-                  label: transfer.from_address_name || 'Unknown Wallet',
+                  label: fromLabel,
                 },
                 to: {
                   address: transfer.to_address,
-                  label: transfer.to_address_name || 'Unknown Wallet',
+                  label: toLabel,
                 },
                 txHash: transfer.transaction_hash,
                 metadata: {
@@ -88,6 +137,11 @@ export async function GET(request: NextRequest) {
         if (value > 10000 || tx.tokenSymbol === 'USDC' || tx.tokenSymbol === 'USDT') {
           const fromLabel = getLabelForAddress(tx.from) || label;
           const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+
+          // Filter out same-entity transfers
+          if (isSameEntityTransfer(fromLabel, toLabel)) {
+            return;
+          }
 
           allFlows.push({
             id: tx.hash,
