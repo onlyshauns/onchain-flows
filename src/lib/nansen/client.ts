@@ -152,10 +152,12 @@ export class NansenClient {
         page: 1,
         per_page: options.limit || 100,
       },
-      order_by: {
-        field: 'transfer_value_usd',
-        direction: 'DESC',
-      },
+      order_by: [
+        {
+          field: 'transfer_value_usd',
+          direction: 'DESC',
+        },
+      ],
     });
   }
 
@@ -242,10 +244,12 @@ export class NansenClient {
           page: 1,
           per_page: options.limit || 100,
         },
-        order_by: {
-          field: 'block_timestamp',
-          direction: 'DESC',
-        },
+        order_by: [
+          {
+            field: 'block_timestamp',
+            direction: 'DESC',
+          },
+        ],
       }
     );
   }
