@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEtherscanClient } from '@/lib/etherscan/client';
-import { FUNDS, getLabelForAddress } from '@/lib/etherscan/addresses';
-import { Flow } from '@/types/flows';
+import { getNansenClient } from '@/lib/nansen/client';
+import { Chain, Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,73 +9,152 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Fund Movements - chains:', chains);
 
-  // Only process Ethereum for now
-  if (!chains.includes('ethereum')) {
-    return NextResponse.json({
-      flows: [],
-      total: 0,
-    });
-  }
-
   try {
-    const client = getEtherscanClient();
+    const client = getNansenClient();
+    const allFlows: Flow[] = [];
 
-    console.log('[API] Tracking', FUNDS.length, 'fund addresses');
+    // Fetch large transfers that might be from funds
+    for (const chainParam of chains) {
+      const chain = chainParam.toLowerCase() as Chain;
+      const popularTokens = client.getPopularTokens(chain);
 
-    // Get recent transactions for institutional funds
-    const transactions = await client.getMultipleAddressTransactions(
-      FUNDS,
-      15 // Get 15 recent txs per address
-    );
+      if (popularTokens.length === 0) {
+        console.log(`[API] No popular tokens configured for ${chain}`);
+        continue;
+      }
 
-    const flows: Flow[] = transactions
-      .slice(0, limit)
-      .map(({ tx, label }) => {
-        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-        const timestamp = parseInt(tx.timeStamp) * 1000;
+      // Get very large transfers (typical for institutional funds)
+      for (const tokenAddress of popularTokens.slice(0, 2)) {
+        try {
+          console.log('[API] Fetching fund transfers for:', tokenAddress.substring(0, 10) + '...');
 
-        // Get labels for from/to addresses
-        const fromLabel = getLabelForAddress(tx.from) || label;
-        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+          const response = await client.getTokenTransfers(chain, tokenAddress, {
+            minValueUsd: 1000000, // $1M+ for institutional funds
+            limit: 50,
+          });
 
-        return {
-          id: tx.hash,
-          type: 'whale-movement' as const,
-          chain: 'ethereum' as const,
-          timestamp,
-          amount: value,
-          amountUsd: value * 2000, // Rough estimate
-          token: {
-            symbol: tx.tokenSymbol,
-            address: tx.contractAddress,
-            name: tx.tokenName,
-          },
-          from: {
-            address: tx.from,
-            label: fromLabel,
-          },
-          to: {
-            address: tx.to,
-            label: toLabel,
-          },
-          txHash: tx.hash,
-          metadata: {
-            category: 'Institutional Flow',
-          },
-        };
-      });
+          if (response.data && response.data.length > 0) {
+            // Filter for transfers involving funds (based on labels)
+            response.data
+              .filter(transfer =>
+                (transfer.from_address_name &&
+                 (transfer.from_address_name.toLowerCase().includes('fund') ||
+                  transfer.from_address_name.toLowerCase().includes('capital') ||
+                  transfer.from_address_name.toLowerCase().includes('grayscale') ||
+                  transfer.from_address_name.toLowerCase().includes('blackrock') ||
+                  transfer.from_address_name.toLowerCase().includes('fidelity') ||
+                  transfer.from_address_name.toLowerCase().includes('ark') ||
+                  transfer.from_address_name.toLowerCase().includes('paradigm') ||
+                  transfer.from_address_name.toLowerCase().includes('a16z'))) ||
+                (transfer.to_address_name &&
+                 (transfer.to_address_name.toLowerCase().includes('fund') ||
+                  transfer.to_address_name.toLowerCase().includes('capital') ||
+                  transfer.to_address_name.toLowerCase().includes('grayscale') ||
+                  transfer.to_address_name.toLowerCase().includes('blackrock') ||
+                  transfer.to_address_name.toLowerCase().includes('fidelity') ||
+                  transfer.to_address_name.toLowerCase().includes('ark') ||
+                  transfer.to_address_name.toLowerCase().includes('paradigm') ||
+                  transfer.to_address_name.toLowerCase().includes('a16z')))
+              )
+              .forEach((transfer) => {
+                allFlows.push({
+                  id: transfer.transaction_hash,
+                  type: 'whale-movement',
+                  chain,
+                  timestamp: new Date(transfer.block_timestamp).getTime(),
+                  amount: parseFloat(transfer.transfer_amount),
+                  amountUsd: transfer.transfer_value_usd,
+                  token: {
+                    symbol: transfer.token_symbol,
+                    address: transfer.token_address,
+                    name: transfer.token_name,
+                  },
+                  from: {
+                    address: transfer.from_address,
+                    label: transfer.from_address_name || 'Unknown Wallet',
+                  },
+                  to: {
+                    address: transfer.to_address,
+                    label: transfer.to_address_name || 'Unknown Wallet',
+                  },
+                  txHash: transfer.transaction_hash,
+                  metadata: {
+                    category: 'Institutional Flow',
+                  },
+                });
+              });
+          }
+        } catch (error) {
+          console.error(`[API] Error fetching fund movements for ${chain}:`, error);
+        }
+      }
+    }
 
-    console.log('[API] Returning', flows.length, 'fund movements');
+    // If no fund activity found, show very large general transfers
+    if (allFlows.length === 0) {
+      console.log('[API] No fund activity found, showing very large transfers');
+
+      for (const chainParam of chains) {
+        const chain = chainParam.toLowerCase() as Chain;
+        const popularTokens = client.getPopularTokens(chain);
+
+        if (popularTokens.length > 0) {
+          try {
+            const response = await client.getTokenTransfers(chain, popularTokens[0], {
+              minValueUsd: 2000000, // $2M+ as fallback
+              limit: 20,
+            });
+
+            if (response.data) {
+              response.data.forEach((transfer) => {
+                allFlows.push({
+                  id: transfer.transaction_hash,
+                  type: 'whale-movement',
+                  chain,
+                  timestamp: new Date(transfer.block_timestamp).getTime(),
+                  amount: parseFloat(transfer.transfer_amount),
+                  amountUsd: transfer.transfer_value_usd,
+                  token: {
+                    symbol: transfer.token_symbol,
+                    address: transfer.token_address,
+                    name: transfer.token_name,
+                  },
+                  from: {
+                    address: transfer.from_address,
+                    label: transfer.from_address_name || 'Unknown Wallet',
+                  },
+                  to: {
+                    address: transfer.to_address,
+                    label: transfer.to_address_name || 'Unknown Wallet',
+                  },
+                  txHash: transfer.transaction_hash,
+                  metadata: {
+                    category: 'Large Institutional Transfer',
+                  },
+                });
+              });
+            }
+          } catch (error) {
+            console.error('[API] Error fetching fallback transfers:', error);
+          }
+        }
+      }
+    }
+
+    // Sort by timestamp DESC (most recent first)
+    allFlows.sort((a, b) => b.timestamp - a.timestamp);
+
+    console.log('[API] Total fund movements:', allFlows.length);
 
     return NextResponse.json(
       {
-        flows,
-        total: flows.length,
-        source: 'Etherscan',
+        flows: allFlows.slice(0, limit),
+        total: allFlows.length,
+        source: 'Nansen',
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
     );
@@ -90,7 +168,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
     );

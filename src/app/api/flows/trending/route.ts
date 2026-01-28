@@ -1,16 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDexScreenerClient } from '@/lib/dexscreener/client';
+import { getNansenClient } from '@/lib/nansen/client';
 import { Chain, Flow } from '@/types/flows';
-
-// Map DexScreener chains to our chain types
-const CHAIN_MAP: Record<string, Chain> = {
-  ethereum: 'ethereum',
-  solana: 'solana',
-  base: 'base',
-  arbitrum: 'arbitrum',
-  optimism: 'optimism',
-  polygon: 'polygon',
-};
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -20,68 +10,84 @@ export async function GET(request: NextRequest) {
   console.log('[API] Trending - chains:', chains);
 
   try {
-    const client = getDexScreenerClient();
+    const client = getNansenClient();
+    const allFlows: Flow[] = [];
 
-    // Map to DexScreener chain names
-    const dexChains = chains
-      .map(c => CHAIN_MAP[c.toLowerCase() as Chain])
-      .filter(Boolean);
+    // Fetch high-volume transfers for each chain
+    for (const chainParam of chains) {
+      const chain = chainParam.toLowerCase() as Chain;
+      const popularTokens = client.getPopularTokens(chain);
 
-    // Get trending pairs with high volume
-    const pairs = await client.getTrendingPairs(dexChains);
+      if (popularTokens.length === 0) {
+        console.log(`[API] No popular tokens configured for ${chain}`);
+        continue;
+      }
 
-    if (pairs.length === 0) {
-      throw new Error('No trending pairs found from DexScreener');
+      // Get transfers for multiple tokens to show trending activity
+      for (const tokenAddress of popularTokens.slice(0, 3)) {
+        try {
+          console.log('[API] Fetching trending transfers for:', tokenAddress.substring(0, 10) + '...');
+
+          const response = await client.getTokenTransfers(chain, tokenAddress, {
+            minValueUsd: 100000, // $100k+ for trending
+            limit: 30,
+          });
+
+          if (response.data && response.data.length > 0) {
+            response.data.forEach((transfer) => {
+              allFlows.push({
+                id: transfer.transaction_hash,
+                type: 'whale-movement',
+                chain,
+                timestamp: new Date(transfer.block_timestamp).getTime(),
+                amount: parseFloat(transfer.transfer_amount),
+                amountUsd: transfer.transfer_value_usd,
+                token: {
+                  symbol: transfer.token_symbol,
+                  address: transfer.token_address,
+                  name: transfer.token_name,
+                },
+                from: {
+                  address: transfer.from_address,
+                  label: transfer.from_address_name || 'Unknown Wallet',
+                },
+                to: {
+                  address: transfer.to_address,
+                  label: transfer.to_address_name || 'Unknown Wallet',
+                },
+                txHash: transfer.transaction_hash,
+                metadata: {
+                  category: 'Trending',
+                },
+              });
+            });
+          }
+        } catch (error) {
+          console.error(`[API] Error fetching trending for ${chain}:`, error);
+        }
+      }
     }
 
-    // Transform to our Flow format
-    const flows: Flow[] = pairs.map(pair => ({
-      id: `trending-${pair.pairAddress}`,
-      type: 'defi-activity',
-      chain: pair.chainId as Chain,
-      timestamp: pair.pairCreatedAt || Date.now(),
-      amount: pair.volume?.h24 || 0,
-      amountUsd: pair.volume?.h24 || 0,
-      token: {
-        symbol: pair.baseToken.symbol,
-        address: pair.baseToken.address,
-        name: pair.baseToken.name,
-      },
-      from: {
-        address: pair.dexId,
-        label: `Trading on ${pair.dexId}`,
-      },
-      to: {
-        address: pair.pairAddress,
-        label: `${pair.baseToken.symbol}/${pair.quoteToken.symbol}`,
-      },
-      txHash: pair.pairAddress,
-      metadata: {
-        category: 'Trending',
-        liquidity: pair.liquidity?.usd,
-        volume24h: pair.volume?.h24,
-        priceChange24h: pair.priceChange?.h24,
-        marketCap: pair.marketCap,
-        fdv: pair.fdv,
-      },
-    }));
+    // Sort by timestamp DESC (most recent first)
+    allFlows.sort((a, b) => b.timestamp - a.timestamp);
+
+    console.log('[API] Total trending flows:', allFlows.length);
 
     return NextResponse.json(
       {
-        flows: flows.slice(0, limit),
-        total: flows.length,
-        source: 'DexScreener',
+        flows: allFlows.slice(0, limit),
+        total: allFlows.length,
+        source: 'Nansen',
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       }
     );
   } catch (error) {
     console.error('[API] Trending error:', error);
 
-    // Return empty array when no data available
     return NextResponse.json(
       {
         flows: [],

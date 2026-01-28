@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEtherscanClient } from '@/lib/etherscan/client';
-import { WHALES, EXCHANGES, getLabelForAddress } from '@/lib/etherscan/addresses';
-import { Flow } from '@/types/flows';
+import { getNansenClient } from '@/lib/nansen/client';
+import { Chain, Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,83 +9,81 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Whale movements - chains:', chains);
 
-  // Only process Ethereum for now
-  if (!chains.includes('ethereum')) {
-    return NextResponse.json({
-      flows: [],
-      total: 0,
-    });
-  }
-
   try {
-    const client = getEtherscanClient();
+    const client = getNansenClient();
+    const allFlows: Flow[] = [];
 
-    // Track whales and major exchanges
-    const addressesToTrack = [...WHALES, ...EXCHANGES.slice(0, 3)];
+    // Fetch large token transfers for each chain
+    for (const chainParam of chains) {
+      const chain = chainParam.toLowerCase() as Chain;
+      const popularTokens = client.getPopularTokens(chain);
 
-    console.log('[API] Tracking', addressesToTrack.length, 'whale addresses');
+      if (popularTokens.length === 0) {
+        console.log(`[API] No popular tokens configured for ${chain}`);
+        continue;
+      }
 
-    // Get recent transactions
-    const transactions = await client.getMultipleAddressTransactions(
-      addressesToTrack,
-      10 // Get 10 recent txs per address
-    );
+      // Get transfers for the top 2 tokens (usually USDC, USDT, or WBTC)
+      for (const tokenAddress of popularTokens.slice(0, 2)) {
+        try {
+          console.log('[API] Fetching transfers for token:', tokenAddress.substring(0, 10) + '...');
 
-    // Filter for large transactions (> $100k equivalent)
-    // Convert transaction values and filter
-    const flows: Flow[] = transactions
-      .filter(({ tx }) => {
-        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-        // This is a rough filter - in production you'd want USD conversion
-        return value > 0; // Show all for now
-      })
-      .slice(0, limit)
-      .map(({ tx, label }) => {
-        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-        const timestamp = parseInt(tx.timeStamp) * 1000;
+          const response = await client.getTokenTransfers(chain, tokenAddress, {
+            minValueUsd: 500000, // $500k+ for whale movements
+            limit: 50,
+          });
 
-        // Get labels for from/to addresses
-        const fromLabel = getLabelForAddress(tx.from) || label;
-        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+          if (response.data && response.data.length > 0) {
+            console.log('[API] Found', response.data.length, 'transfers');
 
-        return {
-          id: tx.hash,
-          type: 'whale-movement' as const,
-          chain: 'ethereum' as const,
-          timestamp,
-          amount: value,
-          amountUsd: value * 2000, // Rough estimate - would need price API
-          token: {
-            symbol: tx.tokenSymbol,
-            address: tx.contractAddress,
-            name: tx.tokenName,
-          },
-          from: {
-            address: tx.from,
-            label: fromLabel,
-          },
-          to: {
-            address: tx.to,
-            label: toLabel,
-          },
-          txHash: tx.hash,
-          metadata: {
-            category: 'Whale Movement',
-          },
-        };
-      });
+            response.data.forEach((transfer) => {
+              allFlows.push({
+                id: transfer.transaction_hash,
+                type: 'whale-movement',
+                chain,
+                timestamp: new Date(transfer.block_timestamp).getTime(),
+                amount: parseFloat(transfer.transfer_amount),
+                amountUsd: transfer.transfer_value_usd,
+                token: {
+                  symbol: transfer.token_symbol,
+                  address: transfer.token_address,
+                  name: transfer.token_name,
+                },
+                from: {
+                  address: transfer.from_address,
+                  label: transfer.from_address_name || 'Unknown Wallet',
+                },
+                to: {
+                  address: transfer.to_address,
+                  label: transfer.to_address_name || 'Unknown Wallet',
+                },
+                txHash: transfer.transaction_hash,
+                metadata: {
+                  category: 'Whale Movement',
+                },
+              });
+            });
+          }
+        } catch (error) {
+          console.error(`[API] Error fetching whale movements for ${chain}:`, error);
+        }
+      }
+    }
 
-    console.log('[API] Returning', flows.length, 'whale movements');
+    // Sort by timestamp DESC (most recent first)
+    allFlows.sort((a, b) => b.timestamp - a.timestamp);
+
+    console.log('[API] Total whale movements:', allFlows.length);
 
     return NextResponse.json(
       {
-        flows,
-        total: flows.length,
-        source: 'Etherscan',
+        flows: allFlows.slice(0, limit),
+        total: allFlows.length,
+        source: 'Nansen',
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
     );
@@ -100,7 +97,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
     );

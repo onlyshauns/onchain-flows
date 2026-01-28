@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getEtherscanClient } from '@/lib/etherscan/client';
-import { PUBLIC_FIGURES, getLabelForAddress } from '@/lib/etherscan/addresses';
-import { Flow } from '@/types/flows';
+import { getNansenClient } from '@/lib/nansen/client';
+import { Chain, Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -10,73 +9,147 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Public Figures - chains:', chains);
 
-  // Only process Ethereum for now
-  if (!chains.includes('ethereum')) {
-    return NextResponse.json({
-      flows: [],
-      total: 0,
-    });
-  }
-
   try {
-    const client = getEtherscanClient();
+    const client = getNansenClient();
+    const allFlows: Flow[] = [];
 
-    console.log('[API] Tracking', PUBLIC_FIGURES.length, 'public figure addresses');
+    // Fetch transfers from public figures for each chain
+    for (const chainParam of chains) {
+      const chain = chainParam.toLowerCase() as Chain;
+      const popularTokens = client.getPopularTokens(chain);
 
-    // Get recent transactions for public figures
-    const transactions = await client.getMultipleAddressTransactions(
-      PUBLIC_FIGURES,
-      15 // Get 15 recent txs per address
-    );
+      if (popularTokens.length === 0) {
+        console.log(`[API] No popular tokens configured for ${chain}`);
+        continue;
+      }
 
-    const flows: Flow[] = transactions
-      .slice(0, limit)
-      .map(({ tx, label }) => {
-        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-        const timestamp = parseInt(tx.timeStamp) * 1000;
+      // Get transfers for the main tokens
+      for (const tokenAddress of popularTokens.slice(0, 2)) {
+        try {
+          console.log('[API] Fetching public figure transfers for:', tokenAddress.substring(0, 10) + '...');
 
-        // Get labels for from/to addresses
-        const fromLabel = getLabelForAddress(tx.from) || label;
-        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
+          // Lower threshold to catch more public figure activity
+          const response = await client.getTokenTransfers(chain, tokenAddress, {
+            minValueUsd: 50000, // $50k+ for public figures
+            limit: 50,
+          });
 
-        return {
-          id: tx.hash,
-          type: 'whale-movement' as const,
-          chain: 'ethereum' as const,
-          timestamp,
-          amount: value,
-          amountUsd: value * 2000, // Rough estimate
-          token: {
-            symbol: tx.tokenSymbol,
-            address: tx.contractAddress,
-            name: tx.tokenName,
-          },
-          from: {
-            address: tx.from,
-            label: fromLabel,
-          },
-          to: {
-            address: tx.to,
-            label: toLabel,
-          },
-          txHash: tx.hash,
-          metadata: {
-            category: 'Public Figure Activity',
-          },
-        };
-      });
+          if (response.data && response.data.length > 0) {
+            // Filter for transfers involving public figures (based on labels)
+            response.data
+              .filter(transfer =>
+                (transfer.from_address_name &&
+                 (transfer.from_address_name.toLowerCase().includes('vitalik') ||
+                  transfer.from_address_name.toLowerCase().includes('buterin') ||
+                  transfer.from_address_name.toLowerCase().includes('founder') ||
+                  transfer.from_address_name.toLowerCase().includes('cz') ||
+                  transfer.from_address_name.toLowerCase().includes('sun'))) ||
+                (transfer.to_address_name &&
+                 (transfer.to_address_name.toLowerCase().includes('vitalik') ||
+                  transfer.to_address_name.toLowerCase().includes('buterin') ||
+                  transfer.to_address_name.toLowerCase().includes('founder') ||
+                  transfer.to_address_name.toLowerCase().includes('cz') ||
+                  transfer.to_address_name.toLowerCase().includes('sun')))
+              )
+              .forEach((transfer) => {
+                allFlows.push({
+                  id: transfer.transaction_hash,
+                  type: 'whale-movement',
+                  chain,
+                  timestamp: new Date(transfer.block_timestamp).getTime(),
+                  amount: parseFloat(transfer.transfer_amount),
+                  amountUsd: transfer.transfer_value_usd,
+                  token: {
+                    symbol: transfer.token_symbol,
+                    address: transfer.token_address,
+                    name: transfer.token_name,
+                  },
+                  from: {
+                    address: transfer.from_address,
+                    label: transfer.from_address_name || 'Unknown Wallet',
+                  },
+                  to: {
+                    address: transfer.to_address,
+                    label: transfer.to_address_name || 'Unknown Wallet',
+                  },
+                  txHash: transfer.transaction_hash,
+                  metadata: {
+                    category: 'Public Figure Activity',
+                  },
+                });
+              });
+          }
+        } catch (error) {
+          console.error(`[API] Error fetching public figures for ${chain}:`, error);
+        }
+      }
+    }
 
-    console.log('[API] Returning', flows.length, 'public figure transactions');
+    // If no public figure activity found, show general large transfers
+    if (allFlows.length === 0) {
+      console.log('[API] No public figure activity found, showing general large transfers');
+
+      for (const chainParam of chains) {
+        const chain = chainParam.toLowerCase() as Chain;
+        const popularTokens = client.getPopularTokens(chain);
+
+        if (popularTokens.length > 0) {
+          try {
+            const response = await client.getTokenTransfers(chain, popularTokens[0], {
+              minValueUsd: 200000,
+              limit: 20,
+            });
+
+            if (response.data) {
+              response.data.forEach((transfer) => {
+                allFlows.push({
+                  id: transfer.transaction_hash,
+                  type: 'whale-movement',
+                  chain,
+                  timestamp: new Date(transfer.block_timestamp).getTime(),
+                  amount: parseFloat(transfer.transfer_amount),
+                  amountUsd: transfer.transfer_value_usd,
+                  token: {
+                    symbol: transfer.token_symbol,
+                    address: transfer.token_address,
+                    name: transfer.token_name,
+                  },
+                  from: {
+                    address: transfer.from_address,
+                    label: transfer.from_address_name || 'Unknown Wallet',
+                  },
+                  to: {
+                    address: transfer.to_address,
+                    label: transfer.to_address_name || 'Unknown Wallet',
+                  },
+                  txHash: transfer.transaction_hash,
+                  metadata: {
+                    category: 'Large Transfer',
+                  },
+                });
+              });
+            }
+          } catch (error) {
+            console.error('[API] Error fetching fallback transfers:', error);
+          }
+        }
+      }
+    }
+
+    // Sort by timestamp DESC (most recent first)
+    allFlows.sort((a, b) => b.timestamp - a.timestamp);
+
+    console.log('[API] Total public figure flows:', allFlows.length);
 
     return NextResponse.json(
       {
-        flows,
-        total: flows.length,
-        source: 'Etherscan',
+        flows: allFlows.slice(0, limit),
+        total: allFlows.length,
+        source: 'Nansen',
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
     );
@@ -90,7 +163,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
         },
       }
     );
