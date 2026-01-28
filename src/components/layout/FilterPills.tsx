@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import clsx from 'clsx';
 import { Chain } from '@/types/movement';
 
@@ -63,67 +62,52 @@ interface FilterPillsProps {
 }
 
 export function FilterPills({ activeCategory, activeChains, onSelectCategory, onToggleChain }: FilterPillsProps) {
-  const [showHelp, setShowHelp] = useState(false);
+  // Find active category description
+  const activeCategoryInfo = CATEGORY_FILTERS.find(f => f.id === activeCategory);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Chain Filters */}
       <div>
         <div className="mb-3">
           <h3 className="text-sm font-semibold text-[var(--foreground)]">Chains</h3>
+          <p className="text-xs text-[var(--foreground)] opacity-60 mt-1">
+            Select chains to view movements from
+          </p>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {CHAIN_FILTERS.map(chain => (
-            <button
-              key={chain.id}
-              onClick={() => onToggleChain(chain.id)}
-              className={clsx(
-                'px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 border',
-                activeChains.includes(chain.id)
-                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-[0_0_15px_rgba(0,255,167,0.3)] border-[var(--accent)]'
-                  : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] hover:border-opacity-70'
-              )}
-            >
-              <img src={chain.icon} alt={chain.label} className="w-5 h-5" />
-              <span>{chain.label}</span>
-            </button>
-          ))}
+          {CHAIN_FILTERS.map(chain => {
+            const isActive = activeChains.includes(chain.id);
+            return (
+              <button
+                key={chain.id}
+                onClick={() => onToggleChain(chain.id)}
+                className={clsx(
+                  'px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 border',
+                  isActive
+                    ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-[0_0_15px_rgba(0,255,167,0.3)] border-[var(--accent)]'
+                    : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] opacity-60 hover:opacity-100 hover:border-opacity-70'
+                )}
+              >
+                <img src={chain.icon} alt={chain.label} className="w-5 h-5" />
+                <span>{chain.label}</span>
+              </button>
+            );
+          })}
         </div>
+        <p className="text-xs text-[var(--foreground)] opacity-50 mt-2">
+          {activeChains.length} of {CHAIN_FILTERS.length} chains selected
+        </p>
       </div>
 
       {/* Category Filters */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3">
           <h3 className="text-sm font-semibold text-[var(--foreground)]">Categories</h3>
-          <button
-            onClick={() => setShowHelp(!showHelp)}
-            className="text-xs text-[var(--accent)] hover:opacity-80 flex items-center gap-1 transition-all font-medium"
-          >
-            {showHelp ? '✕ Hide' : 'ℹ️ What do these mean?'}
-          </button>
+          <p className="text-xs text-[var(--foreground)] opacity-60 mt-1">
+            Filter by movement type
+          </p>
         </div>
-
-        {showHelp && (
-          <div className="mb-3 p-3 bg-[var(--card-bg)] border border-[var(--accent)] border-opacity-30 rounded-lg text-xs space-y-2">
-            <div>
-              <span className="font-semibold text-[var(--accent)]">Powered by Nansen API</span>
-              <p className="text-[var(--foreground)] opacity-80 mt-1">
-                All data enriched with Nansen labels, entity mapping, and smart money tracking
-              </p>
-            </div>
-            <div className="space-y-1.5 pt-2 border-t border-[var(--card-border)]">
-              {CATEGORY_FILTERS.map(filter => (
-                <div key={filter.id}>
-                  <span className="font-medium text-[var(--foreground)]">{filter.label}:</span>
-                  <span className="text-[var(--foreground)] opacity-70 ml-1">{filter.description}</span>
-                </div>
-              ))}
-            </div>
-            <div className="pt-2 border-t border-[var(--card-border)] text-[var(--foreground)] opacity-80">
-              <strong>Thresholds:</strong> ETH $5M+ | SOL/BASE/HL $1M+
-            </div>
-          </div>
-        )}
 
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {CATEGORY_FILTERS.map(filter => (
@@ -134,14 +118,22 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
                 'px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all border',
                 activeCategory === filter.id
                   ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-[0_0_15px_rgba(0,255,167,0.3)] border-[var(--accent)]'
-                  : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] hover:border-opacity-70'
+                  : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] opacity-60 hover:opacity-100 hover:border-opacity-70'
               )}
-              title={filter.description}
             >
               {filter.label}
             </button>
           ))}
         </div>
+
+        {/* Show active category description */}
+        {activeCategoryInfo && (
+          <div className="mt-3 p-3 bg-[var(--card-bg)] border border-[var(--accent)] border-opacity-30 rounded-lg">
+            <p className="text-xs text-[var(--foreground)] opacity-80">
+              {activeCategoryInfo.description}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
