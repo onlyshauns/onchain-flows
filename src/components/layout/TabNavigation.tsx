@@ -10,7 +10,6 @@ const TABS: { id: TabType; label: string; emoji: string }[] = [
   { id: 'fund-movements', label: 'Fund Movements', emoji: '🏦' },
   { id: 'smart-money', label: 'Smart Money', emoji: '🧠' },
   { id: 'defi', label: 'DeFi Activities', emoji: '💰' },
-  { id: 'tokens', label: 'Token Launches', emoji: '🚀' },
 ];
 
 export function TabNavigation() {

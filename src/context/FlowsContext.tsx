@@ -35,7 +35,7 @@ export function FlowsProvider({ children }: { children: ReactNode }) {
     const tabParam = params.get('tab');
     const chainsParam = params.get('chains');
 
-    if (tabParam && ['whale', 'public-figures', 'fund-movements', 'smart-money', 'defi', 'tokens'].includes(tabParam)) {
+    if (tabParam && ['whale', 'public-figures', 'fund-movements', 'smart-money', 'defi'].includes(tabParam)) {
       setActiveTab(tabParam as TabType);
     }
 

@@ -83,7 +83,7 @@ export interface FlowFilters {
 
 // Tab Types
 
-export type TabType = 'whale' | 'public-figures' | 'fund-movements' | 'smart-money' | 'defi' | 'tokens';
+export type TabType = 'whale' | 'public-figures' | 'fund-movements' | 'smart-money' | 'defi';
 
 export interface Tab {
   id: TabType;

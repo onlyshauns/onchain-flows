@@ -32,11 +32,6 @@ const TAB_DESCRIPTIONS: Record<TabType, { title: string; description: string; th
     description: 'Decentralized exchange swaps, liquidity pools, and protocol interactions',
     threshold: '$25K+ transactions',
   },
-  tokens: {
-    title: 'Token Launches',
-    description: 'Recently launched tokens with significant trading volume',
-    threshold: 'Trending new tokens',
-  },
 };
 
 export function TabDescription({ tab }: TabDescriptionProps) {

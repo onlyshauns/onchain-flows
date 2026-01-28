@@ -47,20 +47,23 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Use Nansen's proper label filtering for Public Figure
+          // Get all high-value transfers, filter for labeled wallets
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 100000, // $100k+ for Public Figure activity
+            minValueUsd: 100000, // $100k+ for notable activity
             limit: 100,
-            fromIncludeSmartMoneyLabels: ['Public Figure'],
-            toIncludeSmartMoneyLabels: ['Public Figure'],
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Public Figure Label)';
+            dataSource = 'Nansen (Labeled Wallets $100K+)';
 
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
+
+              // Only include if at least one side has a label
+              if (fromLabel === 'Unknown Wallet' && toLabel === 'Unknown Wallet') {
+                return;
+              }
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {

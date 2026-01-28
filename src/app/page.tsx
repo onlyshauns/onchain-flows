@@ -34,7 +34,6 @@ export default function Home() {
           'fund-movements': '/api/flows/fund-movements',
           'smart-money': '/api/flows/smart-money',
           defi: '/api/flows/defi',
-          tokens: '/api/flows/token-launches',
         };
 
         const endpoint = endpointMap[activeTab];
