@@ -12,16 +12,6 @@ export interface ChainConfig {
 }
 
 export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
-  solana: {
-    id: 'solana',
-    name: 'Solana',
-    symbol: 'SOL',
-    color: '#9945FF',
-    gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
-    icon: '◎',
-    explorerUrl: 'https://solscan.io/tx/',
-    priority: 1,
-  },
   ethereum: {
     id: 'ethereum',
     name: 'Ethereum',
@@ -30,6 +20,16 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     gradient: 'linear-gradient(135deg, #627EEA 0%, #8A92B2 100%)',
     icon: 'Ξ',
     explorerUrl: 'https://etherscan.io/tx/',
+    priority: 1,
+  },
+  solana: {
+    id: 'solana',
+    name: 'Solana',
+    symbol: 'SOL',
+    color: '#9945FF',
+    gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
+    icon: '◎',
+    explorerUrl: 'https://solscan.io/tx/',
     priority: 2,
   },
   base: {
@@ -41,36 +41,6 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     icon: '🔵',
     explorerUrl: 'https://basescan.org/tx/',
     priority: 3,
-  },
-  arbitrum: {
-    id: 'arbitrum',
-    name: 'Arbitrum',
-    symbol: 'ARB',
-    color: '#28A0F0',
-    gradient: 'linear-gradient(135deg, #28A0F0 0%, #96BEDC 100%)',
-    icon: '◆',
-    explorerUrl: 'https://arbiscan.io/tx/',
-    priority: 4,
-  },
-  optimism: {
-    id: 'optimism',
-    name: 'Optimism',
-    symbol: 'OP',
-    color: '#FF0420',
-    gradient: 'linear-gradient(135deg, #FF0420 0%, #FF6B6B 100%)',
-    icon: '🔴',
-    explorerUrl: 'https://optimistic.etherscan.io/tx/',
-    priority: 5,
-  },
-  polygon: {
-    id: 'polygon',
-    name: 'Polygon',
-    symbol: 'MATIC',
-    color: '#8247E5',
-    gradient: 'linear-gradient(135deg, #8247E5 0%, #A855F7 100%)',
-    icon: '⬡',
-    explorerUrl: 'https://polygonscan.com/tx/',
-    priority: 6,
   },
   hyperliquid: {
     id: 'hyperliquid',
@@ -86,8 +56,8 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
 
 export const DEFAULT_CHAINS: Chain[] = ['ethereum', 'base'];
 
-// Available chains - only chains supported by Nansen DEX trades endpoint
-export const AVAILABLE_CHAINS: Chain[] = ['ethereum', 'base', 'arbitrum', 'optimism', 'polygon'];
+// Available chains - all supported chains
+export const AVAILABLE_CHAINS: Chain[] = ['ethereum', 'solana', 'base', 'hyperliquid'];
 
 export const getAllChains = (): Chain[] => {
   return Object.keys(CHAIN_CONFIGS).sort(
@@ -121,9 +91,6 @@ export const getNansenTxUrl = (chain: Chain, txHash: string): string => {
     ethereum: 'ethereum',
     solana: 'solana',
     base: 'base',
-    arbitrum: 'arbitrum',
-    optimism: 'optimism',
-    polygon: 'polygon',
     hyperliquid: 'hyperliquid',
   };
 
