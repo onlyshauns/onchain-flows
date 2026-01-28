@@ -14,13 +14,13 @@ const TAB_DESCRIPTIONS: Record<TabType, { title: string; description: string; th
   },
   'public-figures': {
     title: 'Public Figures',
-    description: 'Onchain activity from known crypto influencers and personalities',
-    threshold: '$50K+ transfers',
+    description: 'Notable DEX trades from tracked wallets',
+    threshold: '$50K+ trades',
   },
   'fund-movements': {
     title: 'Fund Movements',
-    description: 'Institutional and venture capital fund activity',
-    threshold: '$500K+ transfers',
+    description: 'Large institutional DEX trades',
+    threshold: '$500K+ trades',
   },
   'smart-money': {
     title: 'Smart Money',
