@@ -7,7 +7,6 @@ const CHAIN_MAP: Record<Chain, string> = {
   ethereum: 'ethereum',
   solana: 'solana',
   base: 'base',
-  hyperliquid: 'hyperliquid',
 };
 
 /**
@@ -59,8 +58,6 @@ function inferTokenSymbol(chain: Chain): string {
       return 'ETH';
     case 'solana':
       return 'SOL';
-    case 'hyperliquid':
-      return 'HYPE';
     default:
       return 'UNKNOWN';
   }

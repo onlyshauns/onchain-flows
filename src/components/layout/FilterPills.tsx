@@ -50,10 +50,9 @@ interface ChainOption {
 }
 
 const CHAIN_FILTERS: ChainOption[] = [
-  { id: 'ethereum', label: 'ETH', icon: 'Ξ' },
-  { id: 'solana', label: 'SOL', icon: '◎' },
-  { id: 'base', label: 'BASE', icon: '🔵' },
-  { id: 'hyperliquid', label: 'HL', icon: '⚡' },
+  { id: 'ethereum', label: 'ETH', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035' },
+  { id: 'solana', label: 'SOL', icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=035' },
+  { id: 'base', label: 'BASE', icon: 'https://cryptologos.cc/logos/usd-base-base-logo.svg?v=035' },
 ];
 
 interface FilterPillsProps {
@@ -85,7 +84,7 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
                   : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] hover:border-opacity-70'
               )}
             >
-              <span className="text-base">{chain.icon}</span>
+              <img src={chain.icon} alt={chain.label} className="w-5 h-5" />
               <span>{chain.label}</span>
             </button>
           ))}

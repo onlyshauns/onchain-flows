@@ -1,7 +1,7 @@
 // Core Flow Types
 
 // Use the same Chain type as Movement for consistency
-export type Chain = 'ethereum' | 'solana' | 'base' | 'hyperliquid';
+export type Chain = 'ethereum' | 'solana' | 'base';
 
 export type FlowType = 'whale-movement' | 'defi-activity' | 'token-launch' | 'smart-money';
 

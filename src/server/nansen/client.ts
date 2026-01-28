@@ -13,7 +13,6 @@ const CHAIN_MAP: Record<Chain, string> = {
   ethereum: 'ethereum',
   solana: 'solana',
   base: 'base',
-  hyperliquid: 'hyperliquid',
 };
 
 export class NansenClient {
@@ -141,9 +140,6 @@ export class NansenClient {
         'So11111111111111111111111111111111111111112',  // SOL (wrapped)
         'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',  // mSOL
         '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', // ETH (wormhole)
-      ],
-      hyperliquid: [
-        '0x0000000000000000000000000000000000000000', // Native HYPE or USDC
       ],
     };
 

@@ -10,7 +10,7 @@ import { Flow } from '@/types/flows';
 export default function Home() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [chainFilter, setChainFilter] = useState<Movement['chain'][]>(['ethereum', 'solana', 'base', 'hyperliquid']);
+  const [chainFilter, setChainFilter] = useState<Movement['chain'][]>(['ethereum', 'solana', 'base']);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);

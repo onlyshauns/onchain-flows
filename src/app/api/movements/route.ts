@@ -6,7 +6,6 @@ import { enrichTags } from '@/server/enrichers/tag-enricher';
 import { Deduplicator } from '@/server/deduplicator';
 import { MovementCache } from '@/server/cache';
 import { calculateConfidence } from '@/server/utils';
-import { fetchHyperliquidMovements } from '@/server/hyperliquid/client';
 import { Movement, Chain } from '@/types/movement';
 import { NansenTransfer } from '@/lib/nansen/types';
 
@@ -16,14 +15,13 @@ const deduplicator = new Deduplicator();
 const cache = new MovementCache();
 
 // Fixed chains (no user selection)
-const SUPPORTED_CHAINS: Chain[] = ['ethereum', 'solana', 'base', 'hyperliquid'];
+const SUPPORTED_CHAINS: Chain[] = ['ethereum', 'solana', 'base'];
 
 // Thresholds per chain ($USD minimum)
 const THRESHOLDS: Record<Chain, number> = {
   ethereum: 5_000_000,      // $5M minimum
   solana: 1_000_000,        // $1M minimum
   base: 1_000_000,          // $1M minimum
-  hyperliquid: 1_000_000,   // $1M minimum
 };
 
 export async function GET(request: NextRequest) {
@@ -57,8 +55,8 @@ export async function GET(request: NextRequest) {
 
     console.log('[API] Starting data fetch...');
 
-    // Fetch from all supported chains (except Hyperliquid which uses different API)
-    const fetchPromises = (['ethereum', 'solana', 'base'] as const).map(async chain => {
+    // Fetch from all supported chains
+    const fetchPromises = SUPPORTED_CHAINS.map(async chain => {
       try {
         console.log(`[API] Fetching ${chain}...`);
         const chainTransfers = await client.getTransfers({
@@ -76,24 +74,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Fetch Hyperliquid separately (placeholder for now)
-    const hlPromise = fetchHyperliquidMovements(since, THRESHOLDS.hyperliquid)
-      .catch(err => {
-        console.error('[API] Hyperliquid fetch error:', err);
-        return [];
-      });
-
     // Wait for all fetches
-    const [chainResults, hlResults] = await Promise.all([
-      Promise.all(fetchPromises),
-      hlPromise,
-    ]);
+    const chainResults = await Promise.all(fetchPromises);
 
     // Flatten all transfers
-    const normalizedTransfers: Movement[] = [
-      ...chainResults.flat(),
-      ...hlResults,
-    ];
+    const normalizedTransfers: Movement[] = chainResults.flat();
 
     console.log(`[API] Total normalized: ${normalizedTransfers.length} transfers`);
 
@@ -128,7 +113,6 @@ export async function GET(request: NextRequest) {
           ethereum: movements.filter(m => m.chain === 'ethereum').length,
           solana: movements.filter(m => m.chain === 'solana').length,
           base: movements.filter(m => m.chain === 'base').length,
-          hyperliquid: movements.filter(m => m.chain === 'hyperliquid').length,
         },
       },
     }, {

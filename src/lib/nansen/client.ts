@@ -20,7 +20,6 @@ const CHAIN_MAP: Record<Chain, NansenChain> = {
   ethereum: 'ethereum',
   solana: 'solana',
   base: 'base',
-  hyperliquid: 'hyperliquid' as NansenChain,
 };
 
 // Popular tokens for each chain (for flow tracking)
@@ -38,7 +37,6 @@ const CHAIN_TOKENS: Record<NansenChain, string[]> = {
   polygon: ['0x2791bca1f2de4661ed88a30c99a7a9449aa84174'], // USDC on Polygon
   avalanche: [],
   'bnb-chain': [],
-  hyperliquid: [], // Will be populated as we discover popular tokens
 };
 
 export class NansenClient {

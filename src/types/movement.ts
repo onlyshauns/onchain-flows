@@ -1,4 +1,4 @@
-export type Chain = 'ethereum' | 'solana' | 'base' | 'hyperliquid';
+export type Chain = 'ethereum' | 'solana' | 'base';
 
 export type MovementType =
   | 'transfer'      // Simple A→B token transfer

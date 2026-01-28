@@ -18,7 +18,7 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     symbol: 'ETH',
     color: '#627EEA',
     gradient: 'linear-gradient(135deg, #627EEA 0%, #8A92B2 100%)',
-    icon: 'Ξ',
+    icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035',
     explorerUrl: 'https://etherscan.io/tx/',
     priority: 1,
   },
@@ -28,7 +28,7 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     symbol: 'SOL',
     color: '#9945FF',
     gradient: 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)',
-    icon: '◎',
+    icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=035',
     explorerUrl: 'https://solscan.io/tx/',
     priority: 2,
   },
@@ -38,26 +38,16 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     symbol: 'BASE',
     color: '#0052FF',
     gradient: 'linear-gradient(135deg, #0052FF 0%, #00A3FF 100%)',
-    icon: '🔵',
+    icon: 'https://cryptologos.cc/logos/usd-base-base-logo.svg?v=035',
     explorerUrl: 'https://basescan.org/tx/',
     priority: 3,
-  },
-  hyperliquid: {
-    id: 'hyperliquid',
-    name: 'Hyperliquid',
-    symbol: 'HYPE',
-    color: '#00D4AA',
-    gradient: 'linear-gradient(135deg, #00D4AA 0%, #00FFC6 100%)',
-    icon: '⚡',
-    explorerUrl: 'https://explorer.hyperliquid.xyz/tx/',
-    priority: 4,
   },
 };
 
 export const DEFAULT_CHAINS: Chain[] = ['ethereum', 'base'];
 
 // Available chains - all supported chains
-export const AVAILABLE_CHAINS: Chain[] = ['ethereum', 'solana', 'base', 'hyperliquid'];
+export const AVAILABLE_CHAINS: Chain[] = ['ethereum', 'solana', 'base'];
 
 export const getAllChains = (): Chain[] => {
   return Object.keys(CHAIN_CONFIGS).sort(
@@ -83,11 +73,10 @@ export const getChainGradient = (chain: Chain): string => {
 };
 
 /**
- * Get Nansen transaction URL for a given chain and tx hash
- * Now redirects to chain explorers instead due to data quality issues
+ * Get transaction URL for a given chain and tx hash
+ * Uses chain explorers (Etherscan, Solscan, Basescan)
  */
 export const getNansenTxUrl = (chain: Chain, txHash: string): string => {
-  // Use chain explorers directly instead of Nansen
   const config = getChainConfig(chain);
   return `${config.explorerUrl}${txHash}`;
 };
