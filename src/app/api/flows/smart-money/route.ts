@@ -100,12 +100,19 @@ export async function GET(request: NextRequest) {
             });
           }
         } catch (error) {
-          console.error(`[API] Nansen error for ${chain}:`, error);
+          console.error(`[API] Nansen error for ${chain}, token ${tokenAddress}:`, error);
+          if (error instanceof Error) {
+            console.error('[API] Error message:', error.message);
+            console.error('[API] Error stack:', error.stack);
+          }
         }
       }
     }
   } catch (error) {
     console.error('[API] Nansen client error:', error);
+    if (error instanceof Error) {
+      console.error('[API] Client error message:', error.message);
+    }
   }
 
   allFlows.sort((a, b) => {
