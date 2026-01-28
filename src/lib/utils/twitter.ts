@@ -91,7 +91,7 @@ export function generateTweetText(flow: Flow): string {
   return `🚨 WHALE MOVES
 ${tokenAmountText} (${usdAmount}) was sent from ${fromName} to ${toName} on ${chain}
 
-Track on Nansen →`;
+View Transaction →`;
 }
 
 /**

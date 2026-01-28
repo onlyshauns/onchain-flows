@@ -114,7 +114,7 @@ export function FlowCard({ flow }: FlowCardProps) {
           rel="noopener noreferrer"
           className="flex items-center gap-2 text-sm text-[var(--accent)] hover:text-[var(--accent)] hover:underline font-medium transition-all"
         >
-          <span>View on Nansen</span>
+          <span>View on Explorer</span>
           <ExternalLink className="w-4 h-4" />
         </a>
         <ShareButton flow={flow} />

@@ -79,10 +79,10 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               key={chain.id}
               onClick={() => onToggleChain(chain.id)}
               className={clsx(
-                'px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 border-2',
+                'px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 border',
                 activeChains.includes(chain.id)
-                  ? 'bg-[#00ffa7] bg-opacity-15 border-[#00ffa7] text-[#00ffa7] shadow-[0_0_15px_rgba(0,255,167,0.3)]'
-                  : 'bg-[#0d1921] border-[#1a2a38] text-[#edf2f6] opacity-60 hover:opacity-100 hover:border-[#00ffa7] hover:border-opacity-40'
+                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-[0_0_15px_rgba(0,255,167,0.3)] border-[var(--accent)]'
+                  : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] hover:border-opacity-70'
               )}
             >
               <span className="text-base">{chain.icon}</span>
@@ -132,10 +132,10 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               key={filter.id}
               onClick={() => onSelectCategory(filter.id)}
               className={clsx(
-                'px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border-2',
+                'px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all border',
                 activeCategory === filter.id
-                  ? 'bg-[#00ffa7] bg-opacity-15 border-[#00ffa7] text-[#00ffa7] shadow-[0_0_15px_rgba(0,255,167,0.3)]'
-                  : 'bg-[#0d1921] border-[#1a2a38] text-[#edf2f6] opacity-60 hover:opacity-100 hover:border-[#00ffa7] hover:border-opacity-40'
+                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-[0_0_15px_rgba(0,255,167,0.3)] border-[var(--accent)]'
+                  : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] hover:border-opacity-70'
               )}
               title={filter.description}
             >

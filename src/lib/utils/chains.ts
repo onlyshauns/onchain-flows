@@ -84,23 +84,10 @@ export const getChainGradient = (chain: Chain): string => {
 
 /**
  * Get Nansen transaction URL for a given chain and tx hash
+ * Now redirects to chain explorers instead due to data quality issues
  */
 export const getNansenTxUrl = (chain: Chain, txHash: string): string => {
-  // Map our chain names to Nansen's chain slugs
-  const nansenChainMap: Record<Chain, string> = {
-    ethereum: 'ethereum',
-    solana: 'solana',
-    base: 'base',
-    hyperliquid: 'hyperliquid',
-  };
-
-  const chainSlug = nansenChainMap[chain] || chain;
-
-  // For Hyperliquid, use their explorer instead of Nansen
-  if (chain === 'hyperliquid') {
-    return `https://app.hyperliquid.xyz/explorer/tx/${txHash}`;
-  }
-
-  // Nansen URL format: https://app.nansen.ai/{chain}/tx/{txHash}
-  return `https://app.nansen.ai/${chainSlug}/tx/${txHash}`;
+  // Use chain explorers directly instead of Nansen
+  const config = getChainConfig(chain);
+  return `${config.explorerUrl}${txHash}`;
 };
