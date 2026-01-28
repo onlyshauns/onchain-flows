@@ -12,6 +12,7 @@ export default function Home() {
   const [filter, setFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch movements from unified API
   useEffect(() => {
@@ -21,6 +22,7 @@ export default function Home() {
     const fetchMovements = async () => {
       try {
         console.log('[Home] Fetching movements...');
+        setError(null);
 
         const response = await fetch('/api/movements', {
           cache: 'no-store',
@@ -29,20 +31,29 @@ export default function Home() {
             'Pragma': 'no-cache',
           },
         });
+
+        if (!response.ok) {
+          throw new Error(`API error: ${response.status}`);
+        }
+
         const data = await response.json();
 
         console.log('[Home] Received movements:', data.movements?.length || 0);
+        console.log('[Home] Sample movement:', data.movements?.[0]);
 
         if (!isCancelled) {
           setMovements(data.movements || []);
           setLastUpdated(new Date());
           setIsLoading(false);
+          setError(null);
         }
       } catch (error) {
         console.error('[Home] Error fetching movements:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch movements';
         if (!isCancelled) {
           setMovements([]);
           setIsLoading(false);
+          setError(errorMessage);
         }
       }
     };
@@ -111,8 +122,22 @@ export default function Home() {
 
         {lastUpdated && (
           <p className="text-xs text-zinc-500 mb-4">
-            Last updated: {lastUpdated.toLocaleTimeString()}
+            Last updated: {lastUpdated.toLocaleTimeString()} • {movements.length} movements • {filteredMovements.length} after filter
           </p>
+        )}
+
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+            <p className="text-red-900 dark:text-red-100 font-medium">Error loading movements</p>
+            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
+          </div>
+        )}
+
+        {!isLoading && !error && movements.length > 0 && filteredMovements.length === 0 && (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+            <p className="text-yellow-900 dark:text-yellow-100 font-medium">No movements match this filter</p>
+            <p className="text-yellow-700 dark:text-yellow-300 text-sm">Try selecting "All" or a different category</p>
+          </div>
         )}
 
         <main>
