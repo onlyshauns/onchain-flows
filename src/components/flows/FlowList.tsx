@@ -24,10 +24,10 @@ export function FlowList({ flows, isLoading }: FlowListProps) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
         <div className="text-6xl mb-4">📊</div>
-        <h3 className="text-xl font-semibold text-zinc-900 dark:text-white mb-2">
+        <h3 className="text-xl font-semibold text-[var(--foreground)] mb-2">
           No flows found
         </h3>
-        <p className="text-zinc-600 dark:text-zinc-400 max-w-md">
+        <p className="text-[var(--foreground)] opacity-60 max-w-md">
           Try adjusting your chain filters or check back in a few moments for new activity.
         </p>
       </div>

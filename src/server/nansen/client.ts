@@ -195,17 +195,33 @@ export class NansenClient {
     const popularTokens = this.getPopularTokens(chain);
 
     if (popularTokens.length === 0) {
+      console.log(`[NansenClient] No popular tokens configured for ${chain}`);
       return [];
     }
 
-    // Fetch transfers for top token only (for fast loading)
-    const tokenAddress = popularTokens[0];
-    const response = await this.getTokenTransfers(chain, tokenAddress, {
-      minValueUsd: minUsd,
-      limit: 50,
+    // Fetch transfers for multiple tokens in parallel (up to 3 for better coverage)
+    const tokensToFetch = popularTokens.slice(0, 3);
+    console.log(`[NansenClient] Fetching ${tokensToFetch.length} tokens for ${chain}`);
+
+    const promises = tokensToFetch.map(async tokenAddress => {
+      try {
+        const response = await this.getTokenTransfers(chain, tokenAddress, {
+          minValueUsd: minUsd,
+          limit: 30,
+        });
+        console.log(`[NansenClient] ${chain} ${tokenAddress}: ${response.data?.length || 0} transfers`);
+        return response.data || [];
+      } catch (error) {
+        console.error(`[NansenClient] Error fetching ${chain} ${tokenAddress}:`, error);
+        return [];
+      }
     });
 
-    return response.data || [];
+    const results = await Promise.all(promises);
+    const allTransfers = results.flat();
+
+    console.log(`[NansenClient] Total ${chain} transfers: ${allTransfers.length}`);
+    return allTransfers;
   }
 
   private async post<T>(
