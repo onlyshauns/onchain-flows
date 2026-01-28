@@ -8,6 +8,7 @@ import { MovementCache } from '@/server/cache';
 import { calculateConfidence } from '@/server/utils';
 import { fetchHyperliquidMovements } from '@/server/hyperliquid/client';
 import { Movement, Chain } from '@/types/movement';
+import { NansenTransfer } from '@/lib/nansen/types';
 
 // Singletons (instantiated once per server instance)
 const entityEnricher = new EntityEnricher();
@@ -90,15 +91,17 @@ export async function GET(request: NextRequest) {
         return [];
       });
 
-    // Parallel execution
-    const [dexResults, ...transferResults] = await Promise.all([
+    // Parallel execution - fetch all data sources
+    const [dexResults, ...transferAndHLResults] = await Promise.all([
       dexPromise,
       ...transferPromises,
       hlPromise,
     ]);
 
-    const hlResults = transferResults.pop() || []; // Last result is Hyperliquid
-    const allTransfers = transferResults.flat();
+    // Split transfer results and Hyperliquid results
+    const hlResults = transferAndHLResults[transferAndHLResults.length - 1] as Movement[];
+    const transferResultsOnly = transferAndHLResults.slice(0, -1) as NansenTransfer[][];
+    const allTransfers = transferResultsOnly.flat();
 
     console.log('[API] Data fetched:', {
       dex: dexResults.length,
@@ -107,12 +110,16 @@ export async function GET(request: NextRequest) {
     });
 
     // Normalize all data to Movement format
+    const normalizedTransfers: Movement[] = allTransfers.map(t => {
+      const chain = t.chain.toLowerCase() as Chain;
+      return normalizeTransfer(t, chain);
+    });
+
+    const normalizedDexTrades: Movement[] = dexResults.map(t => normalizeDEXTrade(t));
+
     let movements: Movement[] = [
-      ...allTransfers.map(t => {
-        const chain = t.chain.toLowerCase() as Chain;
-        return normalizeTransfer(t, chain);
-      }),
-      ...dexResults.map(t => normalizeDEXTrade(t)),
+      ...normalizedTransfers,
+      ...normalizedDexTrades,
       ...hlResults,
     ];
 
