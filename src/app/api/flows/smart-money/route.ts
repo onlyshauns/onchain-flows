@@ -90,8 +90,6 @@ export async function GET(request: NextRequest) {
             txHash: trade.transaction_hash,
             metadata: {
               category: 'Smart Money',
-              dex: trade.dex_name,
-              tokenSold: trade.token_sold_symbol,
             },
           });
         });
