@@ -63,6 +63,17 @@ export async function GET(request: NextRequest) {
             let filteredTokenSymbol = 0;
             let added = 0;
 
+            // Log first transfer to see what we're getting
+            if (response.data.length > 0) {
+              const sample = response.data[0];
+              console.log(`[DEBUG] Sample transfer:`, {
+                from_label: sample.from_address_label,
+                to_label: sample.to_address_label,
+                token_symbol: sample.token_symbol,
+                value_usd: sample.transfer_value_usd,
+              });
+            }
+
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';

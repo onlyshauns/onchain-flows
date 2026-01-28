@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
       if (popularTokens.length === 0) continue;
 
-      for (const tokenAddress of popularTokens.slice(0, 3)) {
+      for (const tokenAddress of popularTokens) {
         try {
           // Get all high-value transfers, filter for labeled wallets
           const response = await client.getTokenTransfers(chain, tokenAddress, {
@@ -62,6 +62,17 @@ export async function GET(request: NextRequest) {
             let filteredSameEntity = 0;
             let filteredTokenSymbol = 0;
             let added = 0;
+
+            // Log first transfer to see what we're getting
+            if (response.data.length > 0) {
+              const sample = response.data[0];
+              console.log(`[DEBUG] Sample transfer:`, {
+                from_label: sample.from_address_label,
+                to_label: sample.to_address_label,
+                token_symbol: sample.token_symbol,
+                value_usd: sample.transfer_value_usd,
+              });
+            }
 
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
