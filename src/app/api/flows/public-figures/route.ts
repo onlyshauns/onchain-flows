@@ -75,9 +75,9 @@ export async function GET(request: NextRequest) {
                 amount: parseFloat(transfer.transfer_amount),
                 amountUsd: transfer.transfer_value_usd,
                 token: {
-                  symbol: transfer.token_symbol,
-                  address: transfer.token_address,
-                  name: transfer.token_name,
+                  symbol: transfer.token_symbol || 'Unknown',
+                  address: transfer.token_address || '',
+                  name: transfer.token_name || transfer.token_symbol || 'Unknown Token',
                 },
                 from: {
                   address: transfer.from_address,

@@ -78,6 +78,14 @@ export async function GET(request: NextRequest) {
 
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen';
+
+            // Debug: log first transfer token data
+            console.log('[API] First transfer token data:', {
+              token_symbol: response.data[0]?.token_symbol,
+              token_address: response.data[0]?.token_address,
+              token_name: response.data[0]?.token_name,
+            });
+
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
@@ -96,9 +104,9 @@ export async function GET(request: NextRequest) {
                 amount: parseFloat(transfer.transfer_amount),
                 amountUsd: transfer.transfer_value_usd,
                 token: {
-                  symbol: transfer.token_symbol,
-                  address: transfer.token_address,
-                  name: transfer.token_name,
+                  symbol: transfer.token_symbol || 'Unknown',
+                  address: transfer.token_address || '',
+                  name: transfer.token_name || transfer.token_symbol || 'Unknown Token',
                 },
                 from: {
                   address: transfer.from_address,
