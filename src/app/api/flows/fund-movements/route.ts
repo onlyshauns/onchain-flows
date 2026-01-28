@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 100000,
+            minValueUsd: 200000, // $200k+ for institutional funds
             limit: 50,
           });
 

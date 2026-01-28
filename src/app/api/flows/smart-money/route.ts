@@ -37,6 +37,8 @@ function isSmartMoney(label: string): boolean {
     'lp expert',
     'profitable',
     'alpha',
+    '90d smart',
+    '30d smart',
   ];
 
   return keywords.some(keyword => l.includes(keyword));
@@ -63,14 +65,21 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
+          // Smart money range: $50k-$500k (medium-sized strategic moves)
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 150000,
-            limit: 50,
+            minValueUsd: 50000, // $50k minimum
+            limit: 100, // Get more to filter
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen';
+            dataSource = 'Nansen (Smart Money Range)';
+
             response.data.forEach((transfer) => {
+              // Filter to $50k-$500k range ONLY (exclude whales)
+              if (transfer.transfer_value_usd > 500000) {
+                return; // Skip whale-sized transfers
+              }
+
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
@@ -120,8 +129,9 @@ export async function GET(request: NextRequest) {
     console.error('[API] Nansen client error:', error);
   }
 
+  // Sort by USD value and timestamp
   allFlows.sort((a, b) => {
-    if (Math.abs(a.amountUsd - b.amountUsd) > 100000) {
+    if (Math.abs(a.amountUsd - b.amountUsd) > 50000) {
       return b.amountUsd - a.amountUsd;
     }
     return b.timestamp - a.timestamp;

@@ -25,18 +25,46 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Get medium-large transfers (DeFi activity range)
+          // Get DeFi range transfers
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 75000, // $75k+ for DeFi activities
-            limit: 30,
+            minValueUsd: 25000, // $25k+ for DeFi activities (lower than smart money)
+            limit: 100,
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (DeFi Range)';
+            dataSource = 'Nansen (DeFi/DEX)';
 
             response.data.forEach((transfer) => {
+              // Filter to $25k-$200k range for DeFi (avoid overlap with smart money and whales)
+              if (transfer.transfer_value_usd > 200000) {
+                return; // Skip larger transfers
+              }
+
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
+
+              // Prioritize DEX transactions or DeFi protocol interactions
+              const isDeFiRelated = (label: string) => {
+                const l = label.toLowerCase();
+                return (
+                  l.includes('dex') ||
+                  l.includes('uniswap') ||
+                  l.includes('curve') ||
+                  l.includes('aave') ||
+                  l.includes('compound') ||
+                  l.includes('maker') ||
+                  l.includes('liquidity') ||
+                  l.includes('pool') ||
+                  l.includes('defi') ||
+                  l.includes('swap') ||
+                  transfer.exchange_type === 'DEX'
+                );
+              };
+
+              // Only include DeFi-related transactions
+              if (!isDeFiRelated(fromLabel) && !isDeFiRelated(toLabel) && transfer.exchange_type !== 'DEX') {
+                return;
+              }
 
               // Filter out same-entity transfers
               if (fromLabel === toLabel && fromLabel !== 'Unknown Wallet') {

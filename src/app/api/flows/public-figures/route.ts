@@ -70,8 +70,8 @@ export async function GET(request: NextRequest) {
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 50000,
-            limit: 50,
+            minValueUsd: 25000, // $25k+ to catch all public figure activity
+            limit: 100, // Get more to filter
           });
 
           if (response.data && response.data.length > 0) {

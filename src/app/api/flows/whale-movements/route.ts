@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       for (const tokenAddress of popularTokens.slice(0, 2)) {
         try {
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 500000,
+            minValueUsd: 1000000, // $1M+ for TRUE whale movements
             limit: 50,
           });
 
