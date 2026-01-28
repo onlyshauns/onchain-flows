@@ -25,35 +25,32 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Get recent large transfers potentially from smart money wallets
+          // Get large transfers (smart money typically moves large amounts)
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 100000, // $100k+ for smart money moves
+            minValueUsd: 250000, // $250k+ typically indicates smart money
             limit: 30,
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen Smart Money';
+            dataSource = 'Nansen (Large Transfers)';
 
             response.data.forEach((transfer) => {
-              // Use Nansen's label data - they already label smart money wallets
               const fromLabel = transfer.from_address_name || 'Unknown Wallet';
               const toLabel = transfer.to_address_name || 'Unknown Wallet';
 
-              // Include flows with known labels (Nansen labels sophisticated traders)
-              // Exclude exchange-to-exchange and unknown-to-unknown
-              const fromKnown = fromLabel !== 'Unknown Wallet';
-              const toKnown = toLabel !== 'Unknown Wallet';
+              // Filter out same-entity transfers
+              if (fromLabel === toLabel && fromLabel !== 'Unknown Wallet') {
+                return;
+              }
 
-              // Must have at least one labeled side and not both be exchanges
+              // Filter out exchange-to-exchange
               const isExchange = (label: string) => {
                 const l = label.toLowerCase();
                 return l.includes('binance') || l.includes('coinbase') || l.includes('kraken') ||
                        l.includes('bybit') || l.includes('okx');
               };
 
-              const bothExchanges = isExchange(fromLabel) && isExchange(toLabel);
-
-              if ((!fromKnown && !toKnown) || bothExchanges) {
+              if (isExchange(fromLabel) && isExchange(toLabel)) {
                 return;
               }
 

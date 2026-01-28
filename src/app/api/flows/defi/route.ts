@@ -25,23 +25,23 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Get transfers involving DeFi protocols
+          // Get medium-large transfers (DeFi activity range)
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 50000, // $50k+ for DeFi activities
+            minValueUsd: 75000, // $75k+ for DeFi activities
             limit: 30,
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen DeFi';
+            dataSource = 'Nansen (DeFi Range)';
 
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_name || 'Unknown Wallet';
               const toLabel = transfer.to_address_name || 'Unknown Wallet';
 
-              // Include all large transfers with labeled addresses
-              // DeFi activities often show up as Unknown → Protocol or Protocol → Unknown
-              const fromKnown = fromLabel !== 'Unknown Wallet';
-              const toKnown = toLabel !== 'Unknown Wallet';
+              // Filter out same-entity transfers
+              if (fromLabel === toLabel && fromLabel !== 'Unknown Wallet') {
+                return;
+              }
 
               // Filter out exchange-to-exchange transfers
               const isExchange = (label: string) => {
@@ -50,10 +50,7 @@ export async function GET(request: NextRequest) {
                        l.includes('bybit') || l.includes('okx');
               };
 
-              const bothExchanges = isExchange(fromLabel) && isExchange(toLabel);
-              const sameLabel = fromLabel === toLabel;
-
-              if ((!fromKnown && !toKnown) || bothExchanges || sameLabel) {
+              if (isExchange(fromLabel) && isExchange(toLabel)) {
                 return;
               }
 
