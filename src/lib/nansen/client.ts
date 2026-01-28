@@ -20,9 +20,6 @@ const CHAIN_MAP: Record<Chain, NansenChain> = {
   ethereum: 'ethereum',
   solana: 'solana',
   base: 'base',
-  arbitrum: 'arbitrum',
-  optimism: 'optimism',
-  polygon: 'polygon',
   hyperliquid: 'hyperliquid' as NansenChain,
 };
 
