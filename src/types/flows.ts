@@ -29,6 +29,12 @@ export interface Flow {
     category?: string; // e.g., "Exchange", "DeFi", "Bridge"
     confidence?: number; // 0-100
     anomalyScore?: number; // 0-100 for unusual activity
+    // Token launch specific fields
+    liquidity?: number; // Total liquidity in USD
+    volume24h?: number; // 24h trading volume in USD
+    priceChange24h?: number; // 24h price change percentage
+    marketCap?: number; // Market cap in USD
+    fdv?: number; // Fully diluted valuation in USD
   };
 }
 

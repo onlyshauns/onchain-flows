@@ -29,7 +29,7 @@ export default function Home() {
           whale: '/api/flows/whale-movements',
           'smart-money': '/api/flows/whale-movements', // Reusing for now
           defi: '/api/flows/whale-movements', // Reusing for now
-          tokens: '/api/flows/whale-movements', // Reusing for now
+          tokens: '/api/flows/token-launches', // Using DexScreener!
         };
 
         const endpoint = endpointMap[activeTab];

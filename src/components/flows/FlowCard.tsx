@@ -48,18 +48,53 @@ export function FlowCard({ flow }: FlowCardProps) {
       </div>
 
       <div className="space-y-2 mb-4">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-zinc-500 dark:text-zinc-400 font-medium">From:</span>
-          <span className="text-zinc-900 dark:text-white font-mono">
-            {flow.from.label || truncateAddress(flow.from.address)}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-zinc-500 dark:text-zinc-400 font-medium">To:</span>
-          <span className="text-zinc-900 dark:text-white font-mono">
-            {flow.to.label || truncateAddress(flow.to.address)}
-          </span>
-        </div>
+        {flow.type === 'token-launch' ? (
+          <>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">DEX:</span>
+              <span className="text-zinc-900 dark:text-white">
+                {flow.from.label}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">Pair:</span>
+              <span className="text-zinc-900 dark:text-white font-mono">
+                {flow.to.label}
+              </span>
+            </div>
+            {flow.metadata?.volume24h && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">24h Vol:</span>
+                <span className="text-zinc-900 dark:text-white">
+                  {formatUsd(flow.metadata.volume24h, 1)}
+                </span>
+              </div>
+            )}
+            {flow.metadata?.priceChange24h !== undefined && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">24h Change:</span>
+                <span className={flow.metadata.priceChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                  {flow.metadata.priceChange24h.toFixed(2)}%
+                </span>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">From:</span>
+              <span className="text-zinc-900 dark:text-white font-mono">
+                {flow.from.label || truncateAddress(flow.from.address)}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">To:</span>
+              <span className="text-zinc-900 dark:text-white font-mono">
+                {flow.to.label || truncateAddress(flow.to.address)}
+              </span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-zinc-200 dark:border-zinc-800">
