@@ -109,37 +109,126 @@ export class DexScreenerClient {
   }
 
   /**
+   * Get latest token profiles (new launches)
+   */
+  async getLatestTokenProfiles(): Promise<any[]> {
+    const url = `${DEXSCREENER_BASE_URL}/token-profiles/latest/v1`;
+
+    console.log('[DexScreener] Fetching latest token profiles');
+
+    try {
+      const response = await fetch(url, {
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!response.ok) {
+        throw new Error(`DexScreener API error: ${response.status}`);
+      }
+
+      const profiles = await response.json();
+      console.log('[DexScreener] Found token profiles:', profiles?.length || 0);
+      return profiles || [];
+    } catch (error) {
+      console.error('[DexScreener] Error fetching token profiles:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get latest pairs across all chains (for token launches)
-   * We'll search for recently created pairs with good liquidity
+   * Uses token profiles endpoint to get actual new launches
    */
   async getLatestPairs(chains: string[] = ['ethereum', 'solana', 'base']): Promise<DexPair[]> {
-    console.log('[DexScreener] Getting latest pairs for chains:', chains);
+    console.log('[DexScreener] Getting latest token launches for chains:', chains);
+
+    try {
+      // Get latest token profiles (new launches)
+      const profiles = await this.getLatestTokenProfiles();
+
+      if (!profiles || profiles.length === 0) {
+        console.log('[DexScreener] No token profiles found');
+        return [];
+      }
+
+      // Filter by chains we care about
+      const filteredProfiles = profiles.filter(profile =>
+        chains.includes(profile.chainId)
+      );
+
+      console.log('[DexScreener] Filtered profiles:', filteredProfiles.length);
+
+      // Get pair data for each token
+      const pairPromises = filteredProfiles.slice(0, 20).map(async (profile) => {
+        try {
+          const url = `${DEXSCREENER_BASE_URL}/latest/dex/tokens/${profile.tokenAddress}`;
+          const response = await fetch(url, {
+            headers: { 'Accept': 'application/json' }
+          });
+
+          if (!response.ok) return null;
+
+          const data = await response.json();
+          // Return the first pair (usually the main one)
+          return data.pairs?.[0] || null;
+        } catch (error) {
+          console.error(`[DexScreener] Error fetching pair for ${profile.tokenAddress}:`, error);
+          return null;
+        }
+      });
+
+      const pairs = (await Promise.all(pairPromises)).filter(Boolean) as DexPair[];
+
+      // Filter for pairs with some activity
+      const activePairs = pairs.filter(pair =>
+        pair.volume?.h24 > 1000 || // At least $1k in 24h volume
+        pair.priceChange?.h24 !== undefined // Has price data
+      );
+
+      // Sort by creation date (newest first)
+      activePairs.sort((a, b) => {
+        const aTime = a.pairCreatedAt || 0;
+        const bTime = b.pairCreatedAt || 0;
+        return bTime - aTime;
+      });
+
+      console.log('[DexScreener] Total active token launches found:', activePairs.length);
+      return activePairs;
+    } catch (error) {
+      console.error('[DexScreener] Error in getLatestPairs:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get trending/hot pairs (highest volume recently)
+   */
+  async getTrendingPairs(chains: string[] = ['ethereum', 'solana', 'base']): Promise<DexPair[]> {
+    console.log('[DexScreener] Getting trending pairs for chains:', chains);
 
     const allPairs: DexPair[] = [];
 
-    // Search terms that get diverse results across chains
-    const searchTerms = ['USDC', 'ETH', 'SOL', 'WETH', 'USDT'];
+    // Popular base tokens to search for trending pairs
+    const baseTokens = ['USDC', 'USDT', 'ETH', 'SOL', 'WETH'];
 
-    // Collect pairs from multiple searches
-    for (const term of searchTerms) {
+    for (const token of baseTokens) {
       try {
-        const response = await this.searchPairs(term);
+        const response = await this.searchPairs(token);
 
         if (response.pairs && response.pairs.length > 0) {
-          // Filter for chains we care about with good liquidity
-          const filteredPairs = response.pairs
+          // Filter for our chains and high volume
+          const trendingPairs = response.pairs
             .filter(pair =>
-              chains.includes(pair.chainId) && // Must be on one of our chains
-              pair.pairCreatedAt &&
-              pair.liquidity?.usd > 10000 && // At least $10k liquidity (lowered threshold)
-              pair.volume?.h24 > 5000 // Some volume activity
+              chains.includes(pair.chainId) &&
+              pair.volume?.h24 > 50000 && // At least $50k volume
+              pair.liquidity?.usd > 20000 && // At least $20k liquidity
+              pair.priceChange?.h24 !== undefined // Has price data
             )
-            .slice(0, 5); // Top 5 per search term
+            .slice(0, 10); // Top 10 per token
 
-          allPairs.push(...filteredPairs);
+          allPairs.push(...trendingPairs);
         }
       } catch (error) {
-        console.error(`[DexScreener] Error fetching pairs for ${term}:`, error);
+        console.error(`[DexScreener] Error fetching trending for ${token}:`, error);
       }
     }
 
@@ -148,48 +237,11 @@ export class DexScreenerClient {
       new Map(allPairs.map(pair => [pair.pairAddress, pair])).values()
     );
 
-    // Sort by creation date (newest first)
-    uniquePairs.sort((a, b) => b.pairCreatedAt - a.pairCreatedAt);
+    // Sort by 24h volume (highest first)
+    uniquePairs.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
 
-    console.log('[DexScreener] Total latest pairs found:', uniquePairs.length);
+    console.log('[DexScreener] Total trending pairs found:', uniquePairs.length);
     return uniquePairs;
-  }
-
-  /**
-   * Get trending/hot pairs (highest volume recently)
-   */
-  async getTrendingPairs(chains: string[] = ['ethereum', 'solana', 'base']): Promise<DexPair[]> {
-    console.log('[DexScreener] Getting trending pairs');
-
-    const allPairs: DexPair[] = [];
-
-    for (const chain of chains) {
-      try {
-        const response = await this.searchPairs(chain);
-
-        if (response.pairs && response.pairs.length > 0) {
-          // Get pairs with highest 24h volume
-          const hotPairs = response.pairs
-            .filter(pair =>
-              pair.volume?.h24 > 100000 && // $100k+ volume
-              pair.liquidity?.usd > 100000 && // $100k+ liquidity
-              pair.chainId === chain
-            )
-            .sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
-            .slice(0, 10);
-
-          allPairs.push(...hotPairs);
-        }
-      } catch (error) {
-        console.error(`[DexScreener] Error fetching trending for ${chain}:`, error);
-      }
-    }
-
-    // Sort by 24h volume
-    allPairs.sort((a, b) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0));
-
-    console.log('[DexScreener] Total trending pairs:', allPairs.length);
-    return allPairs;
   }
 }
 

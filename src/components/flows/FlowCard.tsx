@@ -48,10 +48,12 @@ export function FlowCard({ flow }: FlowCardProps) {
       </div>
 
       <div className="space-y-2 mb-4">
-        {flow.type === 'token-launch' ? (
+        {flow.type === 'token-launch' || flow.type === 'defi-activity' ? (
           <>
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-zinc-500 dark:text-zinc-400 font-medium">DEX:</span>
+              <span className="text-zinc-500 dark:text-zinc-400 font-medium">
+                {flow.type === 'token-launch' ? 'DEX:' : 'Trading:'}
+              </span>
               <span className="text-zinc-900 dark:text-white">
                 {flow.from.label}
               </span>
@@ -74,7 +76,15 @@ export function FlowCard({ flow }: FlowCardProps) {
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-zinc-500 dark:text-zinc-400 font-medium">24h Change:</span>
                 <span className={flow.metadata.priceChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                  {flow.metadata.priceChange24h.toFixed(2)}%
+                  {flow.metadata.priceChange24h > 0 ? '+' : ''}{flow.metadata.priceChange24h.toFixed(2)}%
+                </span>
+              </div>
+            )}
+            {flow.metadata?.liquidity && (
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-zinc-500 dark:text-zinc-400 font-medium">Liquidity:</span>
+                <span className="text-zinc-900 dark:text-white">
+                  {formatUsd(flow.metadata.liquidity, 1)}
                 </span>
               </div>
             )}
