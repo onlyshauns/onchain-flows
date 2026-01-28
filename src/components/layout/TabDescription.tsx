@@ -15,12 +15,12 @@ const TAB_DESCRIPTIONS: Record<TabType, { title: string; description: string; th
   'public-figures': {
     title: 'Public Figures',
     description: 'Onchain activity from known crypto influencers and personalities',
-    threshold: '$100K+ transfers',
+    threshold: '$50K+ transfers',
   },
   'fund-movements': {
     title: 'Fund Movements',
     description: 'Institutional and venture capital fund activity',
-    threshold: '$1M+ transfers',
+    threshold: '$500K+ transfers',
   },
   'smart-money': {
     title: 'Smart Money',

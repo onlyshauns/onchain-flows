@@ -45,18 +45,18 @@ export async function GET(request: NextRequest) {
 
       if (popularTokens.length === 0) continue;
 
-      for (const tokenAddress of popularTokens) {
+      for (const tokenAddress of popularTokens.slice(0, 2)) {
         try {
-          // Get all high-value transfers, filter for labeled wallets
+          // Get high-value transfers
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 1000000, // $1M+ institutional size
+            minValueUsd: 500000, // Lowered to $500K to increase chances of finding data
             limit: 100,
           });
 
           console.log(`[DEBUG] ${chain} ${tokenAddress}: Response received, data length: ${response.data?.length || 0}`);
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Labeled Wallets $1M+)';
+            dataSource = 'Nansen (Labeled Wallets $500K+)';
 
             console.log(`[DEBUG] ${chain} ${tokenAddress}: Received ${response.data.length} transfers from Nansen`);
 
