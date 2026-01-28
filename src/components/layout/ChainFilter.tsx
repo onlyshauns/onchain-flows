@@ -1,12 +1,12 @@
 'use client';
 
 import { useFlows } from '@/context/FlowsContext';
-import { getAllChains, getChainConfig } from '@/lib/utils/chains';
+import { AVAILABLE_CHAINS, getChainConfig } from '@/lib/utils/chains';
 import clsx from 'clsx';
 
 export function ChainFilter() {
   const { selectedChains, toggleChain } = useFlows();
-  const chains = getAllChains();
+  const chains = AVAILABLE_CHAINS;
 
   return (
     <div className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">

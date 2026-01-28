@@ -76,6 +76,9 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
 
 export const DEFAULT_CHAINS: Chain[] = ['solana', 'ethereum', 'base'];
 
+// Available chains for selection (limited to main 3)
+export const AVAILABLE_CHAINS: Chain[] = ['solana', 'ethereum', 'base'];
+
 export const getAllChains = (): Chain[] => {
   return Object.keys(CHAIN_CONFIGS).sort(
     (a, b) => CHAIN_CONFIGS[a as Chain].priority - CHAIN_CONFIGS[b as Chain].priority

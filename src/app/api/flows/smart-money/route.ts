@@ -57,6 +57,11 @@ export async function GET(request: NextRequest) {
         dataSource = 'Nansen (Smart Money DEX Trades)';
 
         response.data.forEach((trade) => {
+          // Skip if no token symbol available
+          if (!trade.token_bought_symbol) {
+            return;
+          }
+
           const traderLabel = trade.trader_label || trade.smart_money_label || 'Unknown Wallet';
 
           // Extract chain from trade
@@ -70,9 +75,9 @@ export async function GET(request: NextRequest) {
             amount: parseFloat(trade.token_bought_amount),
             amountUsd: trade.trade_value_usd,
             token: {
-              symbol: trade.token_bought_symbol || 'Unknown',
+              symbol: trade.token_bought_symbol,
               address: trade.token_bought_address || '',
-              name: trade.token_bought_name || trade.token_bought_symbol || 'Unknown Token',
+              name: trade.token_bought_name || trade.token_bought_symbol,
             },
             from: {
               address: trade.trader_address,

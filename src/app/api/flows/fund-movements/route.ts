@@ -66,6 +66,11 @@ export async function GET(request: NextRequest) {
                 return;
               }
 
+              // Skip if no token symbol available
+              if (!transfer.token_symbol) {
+                return;
+              }
+
               allFlows.push({
                 id: transfer.transaction_hash,
                 type: 'whale-movement',
@@ -74,9 +79,9 @@ export async function GET(request: NextRequest) {
                 amount: parseFloat(transfer.transfer_amount),
                 amountUsd: transfer.transfer_value_usd,
                 token: {
-                  symbol: transfer.token_symbol || 'Unknown',
+                  symbol: transfer.token_symbol,
                   address: transfer.token_address || '',
-                  name: transfer.token_name || transfer.token_symbol || 'Unknown Token',
+                  name: transfer.token_name || transfer.token_symbol,
                 },
                 from: {
                   address: transfer.from_address,
