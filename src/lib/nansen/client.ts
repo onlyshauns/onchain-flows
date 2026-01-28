@@ -68,8 +68,7 @@ export class NansenClient {
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'apiKey': this.apiKey,
-          'X-API-Key': this.apiKey, // Try both header formats
+          'apikey': this.apiKey,  // Must be lowercase per Nansen docs
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
