@@ -95,9 +95,12 @@ export const getNansenTxUrl = (chain: Chain, txHash: string): string => {
   };
 
   const chainSlug = nansenChainMap[chain] || chain;
-  // For Hyperliquid, use explorer.hyperliquid.xyz instead of Nansen
+
+  // For Hyperliquid, use their explorer instead of Nansen
   if (chain === 'hyperliquid') {
-    return `https://explorer.hyperliquid.xyz/tx/${txHash}`;
+    return `https://app.hyperliquid.xyz/explorer/tx/${txHash}`;
   }
-  return `https://app.nansen.ai/tx/${chainSlug}/${txHash}`;
+
+  // Nansen URL format: https://app.nansen.ai/{chain}/tx/{txHash}
+  return `https://app.nansen.ai/${chainSlug}/tx/${txHash}`;
 };

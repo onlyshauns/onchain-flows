@@ -70,29 +70,8 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
     <div className="space-y-3">
       {/* Chain Filters */}
       <div>
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3">
           <h3 className="text-sm font-semibold text-[var(--foreground)]">Chains</h3>
-          <button
-            onClick={() => {
-              // Toggle all chains
-              const allSelected = activeChains.length === CHAIN_FILTERS.length;
-              if (allSelected) {
-                // Deselect all except first one (always keep at least one)
-                onToggleChain(CHAIN_FILTERS[0].id);
-                activeChains.slice(1).forEach(chain => onToggleChain(chain));
-              } else {
-                // Select all
-                CHAIN_FILTERS.forEach(chain => {
-                  if (!activeChains.includes(chain.id)) {
-                    onToggleChain(chain.id);
-                  }
-                });
-              }
-            }}
-            className="text-xs text-[var(--accent)] hover:opacity-80 font-medium"
-          >
-            {activeChains.length === CHAIN_FILTERS.length ? 'Clear' : 'Select All'}
-          </button>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {CHAIN_FILTERS.map(chain => (
@@ -102,8 +81,8 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               className={clsx(
                 'px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 border-2',
                 activeChains.includes(chain.id)
-                  ? 'bg-[var(--accent)] bg-opacity-20 border-[var(--accent)] text-[var(--accent)] nansen-glow'
-                  : 'bg-[var(--card-bg)] border-[var(--card-border)] text-[var(--foreground)] opacity-50 hover:opacity-100 hover:border-[var(--accent)] hover:border-opacity-50'
+                  ? 'bg-[#00ffa7] bg-opacity-15 border-[#00ffa7] text-[#00ffa7] shadow-[0_0_15px_rgba(0,255,167,0.3)]'
+                  : 'bg-[#0d1921] border-[#1a2a38] text-[#edf2f6] opacity-60 hover:opacity-100 hover:border-[#00ffa7] hover:border-opacity-40'
               )}
             >
               <span className="text-base">{chain.icon}</span>
@@ -155,8 +134,8 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               className={clsx(
                 'px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border-2',
                 activeCategory === filter.id
-                  ? 'bg-[var(--accent)] bg-opacity-20 border-[var(--accent)] text-[var(--accent)] nansen-glow'
-                  : 'bg-[var(--card-bg)] border-[var(--card-border)] text-[var(--foreground)] opacity-50 hover:opacity-100 hover:border-[var(--accent)] hover:border-opacity-50'
+                  ? 'bg-[#00ffa7] bg-opacity-15 border-[#00ffa7] text-[#00ffa7] shadow-[0_0_15px_rgba(0,255,167,0.3)]'
+                  : 'bg-[#0d1921] border-[#1a2a38] text-[#edf2f6] opacity-60 hover:opacity-100 hover:border-[#00ffa7] hover:border-opacity-40'
               )}
               title={filter.description}
             >

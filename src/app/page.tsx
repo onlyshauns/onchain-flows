@@ -88,11 +88,16 @@ export default function Home() {
   });
 
   const toggleChain = (chain: Movement['chain']) => {
-    setChainFilter(prev =>
-      prev.includes(chain)
-        ? prev.filter(c => c !== chain)
-        : [...prev, chain]
-    );
+    setChainFilter(prev => {
+      if (prev.includes(chain)) {
+        // If deselecting, keep at least one chain selected
+        const newFilter = prev.filter(c => c !== chain);
+        return newFilter.length > 0 ? newFilter : prev;
+      } else {
+        // Add the chain to selection
+        return [...prev, chain];
+      }
+    });
   };
 
   // Convert Movement[] to Flow[] for FlowList compatibility
