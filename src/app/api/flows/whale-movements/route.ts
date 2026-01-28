@@ -79,12 +79,27 @@ export async function GET(request: NextRequest) {
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen';
 
-            // Debug: log first transfer token data
-            console.log('[API] First transfer token data:', {
-              token_symbol: response.data[0]?.token_symbol,
-              token_address: response.data[0]?.token_address,
-              token_name: response.data[0]?.token_name,
+            // Debug: log first 3 transfers token data
+            console.log('[API] Sample transfer token data:', {
+              sample1: {
+                symbol: response.data[0]?.token_symbol,
+                name: response.data[0]?.token_name,
+                address: response.data[0]?.token_address,
+              },
+              sample2: {
+                symbol: response.data[1]?.token_symbol,
+                name: response.data[1]?.token_name,
+                address: response.data[1]?.token_address,
+              },
+              sample3: {
+                symbol: response.data[2]?.token_symbol,
+                name: response.data[2]?.token_name,
+                address: response.data[2]?.token_address,
+              },
             });
+
+            let skipped = 0;
+            let added = 0;
 
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
@@ -98,9 +113,11 @@ export async function GET(request: NextRequest) {
 
               // Skip if no token symbol available or if it's "Unknown"
               if (!transfer.token_symbol || transfer.token_symbol.trim() === '' || transfer.token_symbol === 'Unknown') {
+                skipped++;
                 return;
               }
 
+              added++;
               allFlows.push({
                 id: transfer.transaction_hash,
                 type: 'whale-movement',
@@ -127,6 +144,8 @@ export async function GET(request: NextRequest) {
                 },
               });
             });
+
+            console.log(`[API] Whale movements processing: ${added} added, ${skipped} skipped (Unknown tokens)`);
           }
         } catch (error) {
           console.error(`[API] Nansen error for ${chain}:`, error);
