@@ -117,36 +117,42 @@ export class DexScreenerClient {
 
     const allPairs: DexPair[] = [];
 
-    // Search for high-volume new pairs on each chain
-    for (const chain of chains) {
+    // Search terms that get diverse results across chains
+    const searchTerms = ['USDC', 'ETH', 'SOL', 'WETH', 'USDT'];
+
+    // Collect pairs from multiple searches
+    for (const term of searchTerms) {
       try {
-        // Search by chain to get recent activity
-        const response = await this.searchPairs(chain);
+        const response = await this.searchPairs(term);
 
         if (response.pairs && response.pairs.length > 0) {
-          // Filter for recently created pairs (last 7 days)
-          const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-          const recentPairs = response.pairs
+          // Filter for chains we care about with good liquidity
+          const filteredPairs = response.pairs
             .filter(pair =>
+              chains.includes(pair.chainId) && // Must be on one of our chains
               pair.pairCreatedAt &&
-              pair.pairCreatedAt > sevenDaysAgo &&
-              pair.liquidity?.usd > 50000 && // At least $50k liquidity
-              pair.chainId === chain
+              pair.liquidity?.usd > 10000 && // At least $10k liquidity (lowered threshold)
+              pair.volume?.h24 > 5000 // Some volume activity
             )
-            .slice(0, 10); // Top 10 per chain
+            .slice(0, 5); // Top 5 per search term
 
-          allPairs.push(...recentPairs);
+          allPairs.push(...filteredPairs);
         }
       } catch (error) {
-        console.error(`[DexScreener] Error fetching pairs for ${chain}:`, error);
+        console.error(`[DexScreener] Error fetching pairs for ${term}:`, error);
       }
     }
 
-    // Sort by creation date (newest first)
-    allPairs.sort((a, b) => b.pairCreatedAt - a.pairCreatedAt);
+    // Remove duplicates by pairAddress
+    const uniquePairs = Array.from(
+      new Map(allPairs.map(pair => [pair.pairAddress, pair])).values()
+    );
 
-    console.log('[DexScreener] Total latest pairs found:', allPairs.length);
-    return allPairs;
+    // Sort by creation date (newest first)
+    uniquePairs.sort((a, b) => b.pairCreatedAt - a.pairCreatedAt);
+
+    console.log('[DexScreener] Total latest pairs found:', uniquePairs.length);
+    return uniquePairs;
   }
 
   /**
