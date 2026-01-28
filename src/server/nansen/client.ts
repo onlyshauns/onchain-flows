@@ -135,8 +135,16 @@ export class NansenClient {
         '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
         '0x4200000000000000000000000000000000000006', // WETH
       ],
-      solana: [],
-      hyperliquid: [],
+      solana: [
+        'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
+        'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
+        'So11111111111111111111111111111111111111112',  // SOL (wrapped)
+        'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So',  // mSOL
+        '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', // ETH (wormhole)
+      ],
+      hyperliquid: [
+        '0x0000000000000000000000000000000000000000', // Native HYPE or USDC
+      ],
     };
 
     return popularTokens[chain] || [];

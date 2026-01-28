@@ -70,11 +70,29 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
     <div className="space-y-3">
       {/* Chain Filters */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-medium text-[var(--foreground)] opacity-60">Filter by Chain</h3>
-          <span className="text-xs text-[var(--foreground)] opacity-40">
-            {activeChains.length} selected
-          </span>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">Chains</h3>
+          <button
+            onClick={() => {
+              // Toggle all chains
+              const allSelected = activeChains.length === CHAIN_FILTERS.length;
+              if (allSelected) {
+                // Deselect all except first one (always keep at least one)
+                onToggleChain(CHAIN_FILTERS[0].id);
+                activeChains.slice(1).forEach(chain => onToggleChain(chain));
+              } else {
+                // Select all
+                CHAIN_FILTERS.forEach(chain => {
+                  if (!activeChains.includes(chain.id)) {
+                    onToggleChain(chain.id);
+                  }
+                });
+              }
+            }}
+            className="text-xs text-[var(--accent)] hover:opacity-80 font-medium"
+          >
+            {activeChains.length === CHAIN_FILTERS.length ? 'Clear' : 'Select All'}
+          </button>
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {CHAIN_FILTERS.map(chain => (
@@ -82,13 +100,13 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               key={chain.id}
               onClick={() => onToggleChain(chain.id)}
               className={clsx(
-                'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5',
+                'px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 border-2',
                 activeChains.includes(chain.id)
-                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-md nansen-glow'
-                  : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:shadow-sm'
+                  ? 'bg-[var(--accent)] bg-opacity-20 border-[var(--accent)] text-[var(--accent)] nansen-glow'
+                  : 'bg-[var(--card-bg)] border-[var(--card-border)] text-[var(--foreground)] opacity-50 hover:opacity-100 hover:border-[var(--accent)] hover:border-opacity-50'
               )}
             >
-              <span>{chain.icon}</span>
+              <span className="text-base">{chain.icon}</span>
               <span>{chain.label}</span>
             </button>
           ))}
@@ -97,11 +115,11 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
 
       {/* Category Filters */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-medium text-[var(--foreground)] opacity-60">Filter by Category</h3>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-semibold text-[var(--foreground)]">Categories</h3>
           <button
             onClick={() => setShowHelp(!showHelp)}
-            className="text-xs text-[var(--accent)] hover:opacity-80 flex items-center gap-1 transition-all"
+            className="text-xs text-[var(--accent)] hover:opacity-80 flex items-center gap-1 transition-all font-medium"
           >
             {showHelp ? '✕ Hide' : 'ℹ️ What do these mean?'}
           </button>
@@ -135,10 +153,10 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               key={filter.id}
               onClick={() => onSelectCategory(filter.id)}
               className={clsx(
-                'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
+                'px-4 py-2.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-all border-2',
                 activeCategory === filter.id
-                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-md nansen-glow'
-                  : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:shadow-sm'
+                  ? 'bg-[var(--accent)] bg-opacity-20 border-[var(--accent)] text-[var(--accent)] nansen-glow'
+                  : 'bg-[var(--card-bg)] border-[var(--card-border)] text-[var(--foreground)] opacity-50 hover:opacity-100 hover:border-[var(--accent)] hover:border-opacity-50'
               )}
               title={filter.description}
             >

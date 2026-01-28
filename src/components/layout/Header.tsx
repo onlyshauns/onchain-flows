@@ -29,9 +29,9 @@ export function Header() {
 
           <div className="flex items-center gap-4">
             {/* Live indicator */}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--accent)] bg-opacity-10 border border-[var(--accent)] border-opacity-30">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--card-bg)] border border-[var(--accent)] border-opacity-40">
               <div className="h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse nansen-glow" />
-              <span className="text-sm font-medium text-[var(--accent)]">Live</span>
+              <span className="text-sm font-medium text-[var(--foreground)]">Live</span>
             </div>
           </div>
         </div>
