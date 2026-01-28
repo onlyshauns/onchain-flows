@@ -38,28 +38,22 @@ export async function GET(request: NextRequest) {
               const fromLabel = transfer.from_address_name || 'Unknown Wallet';
               const toLabel = transfer.to_address_name || 'Unknown Wallet';
 
-              // Check if involves DeFi protocols
-              const isDeFi =
-                fromLabel.toLowerCase().includes('uniswap') ||
-                toLabel.toLowerCase().includes('uniswap') ||
-                fromLabel.toLowerCase().includes('aave') ||
-                toLabel.toLowerCase().includes('aave') ||
-                fromLabel.toLowerCase().includes('compound') ||
-                toLabel.toLowerCase().includes('compound') ||
-                fromLabel.toLowerCase().includes('maker') ||
-                toLabel.toLowerCase().includes('maker') ||
-                fromLabel.toLowerCase().includes('curve') ||
-                toLabel.toLowerCase().includes('curve') ||
-                fromLabel.toLowerCase().includes('balancer') ||
-                toLabel.toLowerCase().includes('balancer') ||
-                fromLabel.toLowerCase().includes('sushiswap') ||
-                toLabel.toLowerCase().includes('sushiswap') ||
-                fromLabel.toLowerCase().includes('1inch') ||
-                toLabel.toLowerCase().includes('1inch') ||
-                fromLabel.toLowerCase().includes('dex') ||
-                toLabel.toLowerCase().includes('dex');
+              // Include all large transfers with labeled addresses
+              // DeFi activities often show up as Unknown → Protocol or Protocol → Unknown
+              const fromKnown = fromLabel !== 'Unknown Wallet';
+              const toKnown = toLabel !== 'Unknown Wallet';
 
-              if (!isDeFi) {
+              // Filter out exchange-to-exchange transfers
+              const isExchange = (label: string) => {
+                const l = label.toLowerCase();
+                return l.includes('binance') || l.includes('coinbase') || l.includes('kraken') ||
+                       l.includes('bybit') || l.includes('okx');
+              };
+
+              const bothExchanges = isExchange(fromLabel) && isExchange(toLabel);
+              const sameLabel = fromLabel === toLabel;
+
+              if ((!fromKnown && !toKnown) || bothExchanges || sameLabel) {
                 return;
               }
 

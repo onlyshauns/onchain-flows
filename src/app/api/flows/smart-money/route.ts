@@ -35,21 +35,25 @@ export async function GET(request: NextRequest) {
             dataSource = 'Nansen Smart Money';
 
             response.data.forEach((transfer) => {
-              // Check if from or to address has smart money indicators
+              // Use Nansen's label data - they already label smart money wallets
               const fromLabel = transfer.from_address_name || 'Unknown Wallet';
               const toLabel = transfer.to_address_name || 'Unknown Wallet';
 
-              // Only include if one side is labeled as smart money, fund, or trader
-              const isSmartMoney =
-                fromLabel.toLowerCase().includes('smart') ||
-                toLabel.toLowerCase().includes('smart') ||
-                fromLabel.toLowerCase().includes('fund') ||
-                toLabel.toLowerCase().includes('fund') ||
-                fromLabel.toLowerCase().includes('trader') ||
-                fromLabel.toLowerCase().includes('capital') ||
-                toLabel.toLowerCase().includes('capital');
+              // Include flows with known labels (Nansen labels sophisticated traders)
+              // Exclude exchange-to-exchange and unknown-to-unknown
+              const fromKnown = fromLabel !== 'Unknown Wallet';
+              const toKnown = toLabel !== 'Unknown Wallet';
 
-              if (!isSmartMoney) {
+              // Must have at least one labeled side and not both be exchanges
+              const isExchange = (label: string) => {
+                const l = label.toLowerCase();
+                return l.includes('binance') || l.includes('coinbase') || l.includes('kraken') ||
+                       l.includes('bybit') || l.includes('okx');
+              };
+
+              const bothExchanges = isExchange(fromLabel) && isExchange(toLabel);
+
+              if ((!fromKnown && !toKnown) || bothExchanges) {
                 return;
               }
 
