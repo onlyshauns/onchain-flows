@@ -19,14 +19,18 @@ export function normalizeTransfer(
 ): Movement {
   const id = `${chain}-${transfer.transaction_hash}-0`;
 
+  // Infer token from chain if not provided
+  const assetSymbol = transfer.token_symbol || inferTokenSymbol(chain);
+  const assetAddress = transfer.token_address || undefined;
+
   return {
     id,
     ts: new Date(transfer.block_timestamp).getTime(),
     chain,
     movementType: classifyTransferType(transfer),
     amountUsd: transfer.transfer_value_usd,
-    assetSymbol: transfer.token_symbol,
-    assetAddress: transfer.token_address,
+    assetSymbol,
+    assetAddress,
     fromAddress: transfer.from_address,
     toAddress: transfer.to_address,
     fromLabel: transfer.from_address_label || undefined,
@@ -38,6 +42,24 @@ export function normalizeTransfer(
     confidence: 'med',  // Calculated later
     dataSource: 'nansen',
   };
+}
+
+/**
+ * Infer token symbol from chain when not provided by API
+ */
+function inferTokenSymbol(chain: Chain): string {
+  switch (chain) {
+    case 'ethereum':
+      return 'ETH';
+    case 'base':
+      return 'ETH';
+    case 'solana':
+      return 'SOL';
+    case 'hyperliquid':
+      return 'HYPE';
+    default:
+      return 'UNKNOWN';
+  }
 }
 
 /**
