@@ -87,11 +87,11 @@ export function generateTweetText(flow: Flow): string {
     tokenAmountText = usdAmount;
   }
 
-  // New format: WHALE MOVES on new line, amount + USD, from/to
+  // New format: WHALE MOVES on new line, amount + USD, from/to, txn hash
   return `🚨 WHALE MOVES
 ${tokenAmountText} (${usdAmount}) was sent from ${fromName} to ${toName} on ${chain}
 
-View Transaction →`;
+Txn: ${flow.txHash}`;
 }
 
 /**
@@ -99,8 +99,7 @@ View Transaction →`;
  */
 export function getTwitterShareUrl(flow: Flow): string {
   const text = generateTweetText(flow);
-  const nansenUrl = getNansenTxUrl(flow.chain, flow.txHash);
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(nansenUrl)}`;
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
   return url;
 }
 
@@ -109,8 +108,7 @@ export function getTwitterShareUrl(flow: Flow): string {
  */
 export async function copyTweetToClipboard(flow: Flow): Promise<boolean> {
   try {
-    const nansenUrl = getNansenTxUrl(flow.chain, flow.txHash);
-    const text = `${generateTweetText(flow)} ${nansenUrl}`;
+    const text = generateTweetText(flow);
     await navigator.clipboard.writeText(text);
     return true;
   } catch (error) {
