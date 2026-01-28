@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
                 return;
               }
 
-              // Skip if no token symbol available
-              if (!transfer.token_symbol) {
+              // Skip if no token symbol available or if it's "Unknown"
+              if (!transfer.token_symbol || transfer.token_symbol.trim() === '' || transfer.token_symbol === 'Unknown') {
                 return;
               }
 

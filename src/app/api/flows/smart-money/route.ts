@@ -57,8 +57,8 @@ export async function GET(request: NextRequest) {
         dataSource = 'Nansen (Smart Money DEX Trades)';
 
         response.data.forEach((trade) => {
-          // Skip if no token symbol available
-          if (!trade.token_bought_symbol) {
+          // Skip if no token symbol available or if it's "Unknown"
+          if (!trade.token_bought_symbol || trade.token_bought_symbol.trim() === '' || trade.token_bought_symbol === 'Unknown') {
             return;
           }
 
