@@ -81,50 +81,12 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('[API] Token launches error:', error);
 
-    // Fallback to mock data
-    const mockFlows: Flow[] = chains.flatMap((chainParam) => {
-      const chain = chainParam.toLowerCase() as Chain;
-
-      const launches = [
-        { name: 'PepeCoin 2.0', symbol: 'PEPE2', liquidity: 850000, volume: 2400000 },
-        { name: 'AI Trading Bot', symbol: 'AIBOT', liquidity: 1200000, volume: 3100000 },
-        { name: 'DegenDAO Token', symbol: 'DEGEN', liquidity: 680000, volume: 1900000 },
-      ];
-
-      return launches.map((launch, index) => ({
-        id: `launch-${chain}-${index}`,
-        type: 'token-launch' as const,
-        chain,
-        timestamp: Date.now() - (index * 3600000 + Math.random() * 1800000),
-        amount: launch.liquidity,
-        amountUsd: launch.liquidity,
-        token: {
-          symbol: launch.symbol,
-          address: `0x${Math.random().toString(36).substring(7)}`,
-          name: launch.name,
-        },
-        from: {
-          address: '0xUniswap',
-          label: 'Launched on Uniswap',
-        },
-        to: {
-          address: '0xPair',
-          label: `Pair: ${launch.symbol}/USDC`,
-        },
-        txHash: `0x${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        metadata: {
-          category: 'Token Launch',
-          liquidity: launch.liquidity,
-          volume24h: launch.volume,
-        },
-      }));
-    });
-
+    // Return empty array when no data available
     return NextResponse.json(
       {
-        flows: mockFlows.slice(0, limit),
-        total: mockFlows.length,
-        source: 'Mock Data',
+        flows: [],
+        total: 0,
+        source: 'DexScreener (unavailable)',
       },
       {
         headers: {

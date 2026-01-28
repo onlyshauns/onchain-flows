@@ -2,14 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
 import { Chain, Flow } from '@/types/flows';
 
-// Notable public figures to track (fallback)
-const PUBLIC_FIGURES = [
-  { name: 'Vitalik Buterin', address: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045' },
-  { name: 'CZ (Binance)', address: '0x28C6c06298d514Db089934071355E5743bf21d60' },
-  { name: 'Jump Trading', address: '0x5041ed759Dd4aFc3a72b8192C143F72f4724081A' },
-  { name: 'A16z Crypto', address: '0x05e793cE0C6027323Ac150F6d45C2344d28B6019' },
-];
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -83,38 +75,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    throw new Error('No data from Nansen API, using mock data');
+    throw new Error('No public figure data available');
   } catch (error) {
     console.error('[API] Public figures error:', error);
 
-    // Fallback to mock data
-    const mockFlows: Flow[] = chains.flatMap((chainParam) => {
-      const chain = chainParam.toLowerCase() as Chain;
-
-      return PUBLIC_FIGURES.slice(0, 3).map((figure, index) => ({
-        id: `pub-${chain}-${figure.name}-${Date.now()}`,
-        type: 'whale-movement' as const,
-        chain,
-        timestamp: Date.now() - (index * 300000 + Math.random() * 180000),
-        amount: Math.floor(Math.random() * 10000000) + 1000000,
-        amountUsd: Math.floor(Math.random() * 10000000) + 1000000,
-        token: {
-          symbol: chain === 'solana' ? 'SOL' : 'USDC',
-          address: chain === 'solana' ? 'So11111111111111111111111111111111111111112' : '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
-        },
-        from: { address: '0xBinance' + Math.random().toString(36).substring(7), label: 'Binance Hot Wallet' },
-        to: { address: figure.address, label: figure.name },
-        txHash: `0x${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        metadata: { category: 'Public Figure Activity' },
-      }));
-    });
-
-    mockFlows.sort((a, b) => b.timestamp - a.timestamp);
-
+    // Return empty array when no data available
     return NextResponse.json(
       {
-        flows: mockFlows.slice(0, limit),
-        total: mockFlows.length,
+        flows: [],
+        total: 0,
       },
       {
         headers: {

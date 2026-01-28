@@ -147,45 +147,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Fall back to mock data
-    throw new Error('No data from Nansen API, using mock data');
+    throw new Error('No trending data available');
   } catch (error) {
     console.error('[API] Trending error:', error);
 
-    // Return mock data as fallback
-    const mockFlows: Flow[] = chains.flatMap((chainParam, chainIndex) => {
-      const chain = chainParam.toLowerCase() as Chain;
-      const trendingMoves = [
-        { label: 'BlackRock IBIT', amount: 85000000, token: 'WBTC' },
-        { label: 'Binance Hot Wallet', amount: 45000000, token: 'USDC' },
-        { label: 'Jump Trading', amount: 32000000, token: 'SOL' },
-        { label: 'Vitalik Buterin', amount: 15000000, token: 'ETH' },
-      ];
-
-      return trendingMoves.slice(0, 3).map((move, index) => ({
-        id: `trending-${chain}-${index}-${Date.now()}`,
-        type: 'whale-movement' as const,
-        chain,
-        timestamp: Date.now() - ((chainIndex * 3 + index) * 180000),
-        amount: move.amount,
-        amountUsd: move.amount,
-        token: {
-          symbol: move.token,
-          address: chain === 'solana' ? 'So11111111111111111111111111111111111111112' : '0x...',
-        },
-        from: { address: '0x...', label: move.label },
-        to: { address: '0x...', label: index % 2 === 0 ? 'DeFi Protocol' : 'CEX Deposit' },
-        txHash: `0x${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        metadata: { category: 'Trending', anomalyScore: 85 + Math.floor(Math.random() * 15) },
-      }));
-    });
-
-    mockFlows.sort((a, b) => b.amountUsd - a.amountUsd);
-
+    // Return empty array when no data available
     return NextResponse.json(
       {
-        flows: mockFlows.slice(0, limit),
-        total: mockFlows.length,
+        flows: [],
+        total: 0,
       },
       {
         headers: {

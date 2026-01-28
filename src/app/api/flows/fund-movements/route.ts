@@ -2,13 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
 import { Chain, Flow } from '@/types/flows';
 
-const FUNDS = [
-  { name: 'Grayscale Bitcoin Trust', address: '0x8EB8a3b98659Cce290402893d0a8614FD1659f0' },
-  { name: 'BlackRock IBIT', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599' },
-  { name: 'Fidelity Digital Assets', address: '0x8B3192f5eEBD8579568A2Ed41E6FEB402f93f73F' },
-  { name: 'Galaxy Digital', address: '0x1111111254fb6c44bAC0beD2854e76F90643097d' },
-];
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -84,38 +77,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    throw new Error('No data from Nansen API, using mock data');
+    throw new Error('No fund movement data available');
   } catch (error) {
     console.error('[API] Fund movements error:', error);
 
-    // Fallback to mock data
-    const mockFlows: Flow[] = chains.flatMap((chainParam) => {
-      const chain = chainParam.toLowerCase() as Chain;
-
-      return FUNDS.slice(0, 4).map((fund, index) => ({
-        id: `fund-${chain}-${fund.name}-${Date.now()}`,
-        type: 'whale-movement' as const,
-        chain,
-        timestamp: Date.now() - (index * 450000 + Math.random() * 200000),
-        amount: Math.floor(Math.random() * 50000000) + 10000000,
-        amountUsd: Math.floor(Math.random() * 50000000) + 10000000,
-        token: {
-          symbol: chain === 'solana' ? 'SOL' : Math.random() > 0.3 ? 'WBTC' : 'ETH',
-          address: chain === 'solana' ? 'So11111111111111111111111111111111111111112' : '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599',
-        },
-        from: { address: '0xCoinbase' + Math.random().toString(36).substring(7), label: 'Coinbase Institutional' },
-        to: { address: fund.address, label: fund.name },
-        txHash: `0x${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        metadata: { category: 'Institutional Flow' },
-      }));
-    });
-
-    mockFlows.sort((a, b) => b.timestamp - a.timestamp);
-
+    // Return empty array when no data available
     return NextResponse.json(
       {
-        flows: mockFlows.slice(0, limit),
-        total: mockFlows.length,
+        flows: [],
+        total: 0,
       },
       {
         headers: {
