@@ -47,12 +47,12 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Use Nansen's proper label filtering for Smart Money
+          // TEMP: Test without label filtering to see if we get any results
           const response = await client.getTokenTransfers(chain, tokenAddress, {
             minValueUsd: 10000,
             limit: 100,
-            fromIncludeSmartMoneyLabels: ['Smart Trader'],
-            toIncludeSmartMoneyLabels: ['Smart Trader'],
+            // fromIncludeSmartMoneyLabels: ['Smart Trader'],
+            // toIncludeSmartMoneyLabels: ['Smart Trader'],
           });
 
           if (response.data && response.data.length > 0) {
