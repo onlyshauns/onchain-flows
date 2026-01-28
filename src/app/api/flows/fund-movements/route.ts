@@ -45,12 +45,12 @@ export async function GET(request: NextRequest) {
 
       if (popularTokens.length === 0) continue;
 
-      for (const tokenAddress of popularTokens.slice(0, 3)) {
+      for (const tokenAddress of popularTokens) {
         try {
           // Use Nansen's proper label filtering for Funds
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 200000,
-            limit: 50,
+            minValueUsd: 100000,
+            limit: 100,
             fromIncludeSmartMoneyLabels: ['Fund'],
             toIncludeSmartMoneyLabels: ['Fund'],
           });
