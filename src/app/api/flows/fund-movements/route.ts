@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNansenClient } from '@/lib/nansen/client';
-import { Chain, Flow } from '@/types/flows';
+import { getEtherscanClient } from '@/lib/etherscan/client';
+import { FUNDS, getLabelForAddress } from '@/lib/etherscan/addresses';
+import { Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,79 +10,79 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Fund Movements - chains:', chains);
 
+  // Only process Ethereum for now
+  if (!chains.includes('ethereum')) {
+    return NextResponse.json({
+      flows: [],
+      total: 0,
+    });
+  }
+
   try {
-    const client = getNansenClient();
-    const allFlows: Flow[] = [];
+    const client = getEtherscanClient();
 
-    // Use token transfers with high value filter for institutional flows
-    for (const chainParam of chains) {
-      const chain = chainParam.toLowerCase() as Chain;
-      const popularTokens = client.getPopularTokens(chain);
+    console.log('[API] Tracking', FUNDS.length, 'fund addresses');
 
-      if (popularTokens.length === 0) continue;
+    // Get recent transactions for institutional funds
+    const transactions = await client.getMultipleAddressTransactions(
+      FUNDS,
+      15 // Get 15 recent txs per address
+    );
 
-      const tokenAddress = popularTokens[0];
+    const flows: Flow[] = transactions
+      .slice(0, limit)
+      .map(({ tx, label }) => {
+        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+        const timestamp = parseInt(tx.timeStamp) * 1000;
 
-      try {
-        const response = await client.getTokenTransfers(chain, tokenAddress, {
-          minValueUsd: 10000000, // $10M+ for institutional
-          limit: 20,
-        });
+        // Get labels for from/to addresses
+        const fromLabel = getLabelForAddress(tx.from) || label;
+        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
 
-        if (response.data && response.data.length > 0) {
-          response.data.forEach((transfer) => {
-            allFlows.push({
-              id: transfer.transaction_hash,
-              type: 'whale-movement',
-              chain,
-              timestamp: new Date(transfer.block_timestamp).getTime(),
-              amount: transfer.transfer_value_usd,
-              amountUsd: transfer.transfer_value_usd,
-              token: {
-                symbol: transfer.token_symbol,
-                address: transfer.token_address,
-              },
-              from: {
-                address: transfer.from_address,
-                label: transfer.from_address_name || 'Unknown Wallet',
-              },
-              to: {
-                address: transfer.to_address,
-                label: transfer.to_address_name || 'Unknown Wallet',
-              },
-              txHash: transfer.transaction_hash,
-              metadata: {
-                category: 'Institutional Flow',
-              },
-            });
-          });
-        }
-      } catch (error) {
-        console.error(`[API] Error fetching fund movements for ${chain}:`, error);
-      }
-    }
-
-    if (allFlows.length > 0) {
-      allFlows.sort((a, b) => b.timestamp - a.timestamp);
-
-      return NextResponse.json(
-        {
-          flows: allFlows.slice(0, limit),
-          total: allFlows.length,
-        },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        return {
+          id: tx.hash,
+          type: 'whale-movement' as const,
+          chain: 'ethereum' as const,
+          timestamp,
+          amount: value,
+          amountUsd: value * 2000, // Rough estimate
+          token: {
+            symbol: tx.tokenSymbol,
+            address: tx.contractAddress,
+            name: tx.tokenName,
           },
-        }
-      );
-    }
+          from: {
+            address: tx.from,
+            label: fromLabel,
+          },
+          to: {
+            address: tx.to,
+            label: toLabel,
+          },
+          txHash: tx.hash,
+          metadata: {
+            category: 'Institutional Flow',
+          },
+        };
+      });
 
-    throw new Error('No fund movement data available');
+    console.log('[API] Returning', flows.length, 'fund movements');
+
+    return NextResponse.json(
+      {
+        flows,
+        total: flows.length,
+        source: 'Etherscan',
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
     console.error('[API] Fund movements error:', error);
 
-    // Return empty array when no data available
     return NextResponse.json(
       {
         flows: [],
@@ -89,7 +90,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       }
     );

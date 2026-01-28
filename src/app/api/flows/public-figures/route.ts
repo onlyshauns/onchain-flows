@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNansenClient } from '@/lib/nansen/client';
-import { Chain, Flow } from '@/types/flows';
+import { getEtherscanClient } from '@/lib/etherscan/client';
+import { PUBLIC_FIGURES, getLabelForAddress } from '@/lib/etherscan/addresses';
+import { Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,77 +10,79 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Public Figures - chains:', chains);
 
+  // Only process Ethereum for now
+  if (!chains.includes('ethereum')) {
+    return NextResponse.json({
+      flows: [],
+      total: 0,
+    });
+  }
+
   try {
-    const client = getNansenClient();
-    const allFlows: Flow[] = [];
+    const client = getEtherscanClient();
 
-    // Try to get flows using TGM flows with public_figure label
-    for (const chainParam of chains) {
-      const chain = chainParam.toLowerCase() as Chain;
-      const popularTokens = client.getPopularTokens(chain);
+    console.log('[API] Tracking', PUBLIC_FIGURES.length, 'public figure addresses');
 
-      if (popularTokens.length === 0) continue;
+    // Get recent transactions for public figures
+    const transactions = await client.getMultipleAddressTransactions(
+      PUBLIC_FIGURES,
+      15 // Get 15 recent txs per address
+    );
 
-      const tokenAddress = popularTokens[0];
-      const tokenSymbol = chain === 'solana' ? 'SOL' : chain === 'ethereum' ? 'USDC' : 'USDC';
+    const flows: Flow[] = transactions
+      .slice(0, limit)
+      .map(({ tx, label }) => {
+        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+        const timestamp = parseInt(tx.timeStamp) * 1000;
 
-      try {
-        const response = await client.getTGMFlows(chain, tokenAddress, 'public_figure', { limit: 20 });
+        // Get labels for from/to addresses
+        const fromLabel = getLabelForAddress(tx.from) || label;
+        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
 
-        // Transform TGM flows to our Flow format
-        if (response.data && response.data.length > 0) {
-          response.data.forEach((flowData, index) => {
-            if (flowData.value_usd > 500000) {
-              allFlows.push({
-                id: `public-figure-${chain}-${index}-${Date.now()}`,
-                type: 'whale-movement',
-                chain,
-                timestamp: new Date(flowData.date).getTime(),
-                amount: flowData.value_usd,
-                amountUsd: flowData.value_usd,
-                token: { symbol: tokenSymbol, address: tokenAddress },
-                from: {
-                  address: '0xPublicFigure',
-                  label: 'Public Figure',
-                },
-                to: {
-                  address: '0xDestination',
-                  label: flowData.total_outflows_count > flowData.total_inflows_count ? 'Distribution' : 'Accumulation',
-                },
-                txHash: `0x${Date.now()}-${index}`,
-                metadata: {
-                  category: 'Public Figure Activity',
-                },
-              });
-            }
-          });
-        }
-      } catch (error) {
-        console.error(`[API] Error fetching public figures for ${chain}:`, error);
-      }
-    }
-
-    if (allFlows.length > 0) {
-      allFlows.sort((a, b) => b.timestamp - a.timestamp);
-
-      return NextResponse.json(
-        {
-          flows: allFlows.slice(0, limit),
-          total: allFlows.length,
-        },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        return {
+          id: tx.hash,
+          type: 'whale-movement' as const,
+          chain: 'ethereum' as const,
+          timestamp,
+          amount: value,
+          amountUsd: value * 2000, // Rough estimate
+          token: {
+            symbol: tx.tokenSymbol,
+            address: tx.contractAddress,
+            name: tx.tokenName,
           },
-        }
-      );
-    }
+          from: {
+            address: tx.from,
+            label: fromLabel,
+          },
+          to: {
+            address: tx.to,
+            label: toLabel,
+          },
+          txHash: tx.hash,
+          metadata: {
+            category: 'Public Figure Activity',
+          },
+        };
+      });
 
-    throw new Error('No public figure data available');
+    console.log('[API] Returning', flows.length, 'public figure transactions');
+
+    return NextResponse.json(
+      {
+        flows,
+        total: flows.length,
+        source: 'Etherscan',
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
     console.error('[API] Public figures error:', error);
 
-    // Return empty array when no data available
     return NextResponse.json(
       {
         flows: [],
@@ -87,7 +90,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       }
     );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getNansenClient } from '@/lib/nansen/client';
-import { Chain, Flow } from '@/types/flows';
+import { getEtherscanClient } from '@/lib/etherscan/client';
+import { WHALES, EXCHANGES, getLabelForAddress } from '@/lib/etherscan/addresses';
+import { Flow } from '@/types/flows';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -9,76 +10,89 @@ export async function GET(request: NextRequest) {
 
   console.log('[API] Whale movements - chains:', chains);
 
+  // Only process Ethereum for now
+  if (!chains.includes('ethereum')) {
+    return NextResponse.json({
+      flows: [],
+      total: 0,
+    });
+  }
+
   try {
-    const client = getNansenClient();
-    const allFlows: Flow[] = [];
+    const client = getEtherscanClient();
 
-    // Fetch token transfers for each chain
-    for (const chainParam of chains) {
-      const chain = chainParam.toLowerCase() as Chain;
-      const popularTokens = client.getPopularTokens(chain);
+    // Track whales and major exchanges
+    const addressesToTrack = [...WHALES, ...EXCHANGES.slice(0, 3)];
 
-      if (popularTokens.length === 0) continue;
+    console.log('[API] Tracking', addressesToTrack.length, 'whale addresses');
 
-      const tokenAddress = popularTokens[0];
+    // Get recent transactions
+    const transactions = await client.getMultipleAddressTransactions(
+      addressesToTrack,
+      10 // Get 10 recent txs per address
+    );
 
-      try {
-        const response = await client.getTokenTransfers(chain, tokenAddress, {
-          minValueUsd: 1000000, // $1M+ for whales
-          limit: 30,
-        });
+    // Filter for large transactions (> $100k equivalent)
+    // Convert transaction values and filter
+    const flows: Flow[] = transactions
+      .filter(({ tx }) => {
+        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+        // This is a rough filter - in production you'd want USD conversion
+        return value > 0; // Show all for now
+      })
+      .slice(0, limit)
+      .map(({ tx, label }) => {
+        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
+        const timestamp = parseInt(tx.timeStamp) * 1000;
 
-        if (response.data && response.data.length > 0) {
-          response.data.forEach((transfer) => {
-            allFlows.push({
-              id: transfer.transaction_hash,
-              type: 'whale-movement',
-              chain,
-              timestamp: new Date(transfer.block_timestamp).getTime(),
-              amount: transfer.transfer_value_usd,
-              amountUsd: transfer.transfer_value_usd,
-              token: {
-                symbol: transfer.token_symbol,
-                address: transfer.token_address,
-              },
-              from: {
-                address: transfer.from_address,
-                label: transfer.from_address_name || 'Whale Wallet',
-              },
-              to: {
-                address: transfer.to_address,
-                label: transfer.to_address_name || 'Unknown',
-              },
-              txHash: transfer.transaction_hash,
-            });
-          });
-        }
-      } catch (error) {
-        console.error(`[API] Error fetching whale movements for ${chain}:`, error);
-      }
-    }
+        // Get labels for from/to addresses
+        const fromLabel = getLabelForAddress(tx.from) || label;
+        const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
 
-    if (allFlows.length > 0) {
-      allFlows.sort((a, b) => b.timestamp - a.timestamp);
-
-      return NextResponse.json(
-        {
-          flows: allFlows.slice(0, limit),
-          total: allFlows.length,
-        },
-        {
-          headers: {
-            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        return {
+          id: tx.hash,
+          type: 'whale-movement' as const,
+          chain: 'ethereum' as const,
+          timestamp,
+          amount: value,
+          amountUsd: value * 2000, // Rough estimate - would need price API
+          token: {
+            symbol: tx.tokenSymbol,
+            address: tx.contractAddress,
+            name: tx.tokenName,
           },
-        }
-      );
-    }
+          from: {
+            address: tx.from,
+            label: fromLabel,
+          },
+          to: {
+            address: tx.to,
+            label: toLabel,
+          },
+          txHash: tx.hash,
+          metadata: {
+            category: 'Whale Movement',
+          },
+        };
+      });
 
-    throw new Error('No whale movement data available');
+    console.log('[API] Returning', flows.length, 'whale movements');
+
+    return NextResponse.json(
+      {
+        flows,
+        total: flows.length,
+        source: 'Etherscan',
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+        },
+      }
+    );
   } catch (error) {
-    console.error('Whale movements API error:', error);
+    console.error('[API] Whale movements error:', error);
 
-    // Return empty array when no data available
     return NextResponse.json(
       {
         flows: [],
@@ -86,7 +100,7 @@ export async function GET(request: NextRequest) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
         },
       }
     );
