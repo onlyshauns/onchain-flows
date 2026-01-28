@@ -136,6 +136,11 @@ export async function GET(request: NextRequest) {
           const fromLabel = getLabelForAddress(tx.from) || label;
           const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
 
+          // Filter out same-entity transfers
+          if (isSameEntityTransfer(fromLabel, toLabel)) {
+            return;
+          }
+
           allFlows.push({
             id: tx.hash,
             type: 'whale-movement',
