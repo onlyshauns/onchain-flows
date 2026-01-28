@@ -9,17 +9,11 @@ import { Flow } from '@/types/flows';
 
 export default function Home() {
   const [movements, setMovements] = useState<Movement[]>([]);
-  const [filter, setFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [chainFilter, setChainFilter] = useState<Movement['chain'][]>(['ethereum', 'solana', 'base', 'hyperliquid']);
   const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
-
-  // Check if component is mounted (client-side)
-  useEffect(() => {
-    setIsMounted(true);
-    console.log('[Home] Component mounted on client');
-  }, []);
 
   // Fetch movements from unified API
   useEffect(() => {
@@ -80,13 +74,26 @@ export default function Home() {
 
   // Client-side filtering
   const filteredMovements = movements.filter(m => {
-    if (filter === 'all') return true;
-    if (filter === 'exchanges') return m.tags.includes('exchange');
-    if (filter === 'funds') return m.tags.includes('fund');
-    if (filter === 'protocols') return m.tags.includes('protocol');
-    if (filter === 'high_conviction') return m.confidence === 'high' && m.amountUsd > 10_000_000;
+    // Chain filter
+    if (!chainFilter.includes(m.chain)) return false;
+
+    // Category filter
+    if (categoryFilter === 'all') return true;
+    if (categoryFilter === 'exchanges') return m.tags.includes('exchange');
+    if (categoryFilter === 'smart_money') return m.tags.includes('smart_money');
+    if (categoryFilter === 'defi') return m.tags.includes('defi') || m.tags.includes('protocol');
+    if (categoryFilter === 'stablecoins') return m.tags.includes('stablecoin');
+    if (categoryFilter === 'mega_whales') return m.tags.includes('mega_whale');
     return true;
   });
+
+  const toggleChain = (chain: Movement['chain']) => {
+    setChainFilter(prev =>
+      prev.includes(chain)
+        ? prev.filter(c => c !== chain)
+        : [...prev, chain]
+    );
+  };
 
   // Convert Movement[] to Flow[] for FlowList compatibility
   const flows: Flow[] = filteredMovements.map(m => ({
@@ -120,16 +127,13 @@ export default function Home() {
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Debug status */}
-        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs font-mono">
-          <div>🔍 Debug: Client={isMounted ? 'Yes' : 'No'} | Loading={isLoading ? 'Yes' : 'No'} | Movements={movements.length} | Error={error || 'None'}</div>
-        </div>
-
         <div className="mb-6">
-          <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
-            Filter by category
-          </h2>
-          <FilterPills active={filter} onSelect={setFilter} />
+          <FilterPills
+            activeCategory={categoryFilter}
+            activeChains={chainFilter}
+            onSelectCategory={setCategoryFilter}
+            onToggleChain={toggleChain}
+          />
         </div>
 
         {lastUpdated && (

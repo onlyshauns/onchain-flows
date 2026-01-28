@@ -6,21 +6,25 @@ import { Movement, MovementTag } from '@/types/movement';
 export function enrichTags(movement: Movement): Movement {
   const tags: MovementTag[] = [];
 
-  // Get all labels for analysis
-  const allLabels = [
-    movement.fromLabel?.toLowerCase(),
-    movement.toLabel?.toLowerCase(),
+  // Get all labels for analysis (preserve case for emoji detection)
+  const allLabelsOriginal = [
+    movement.fromLabel,
+    movement.toLabel,
   ].filter((l): l is string => Boolean(l));
 
-  // Exchange tag
-  if (allLabels.some(l =>
+  const allLabels = allLabelsOriginal.map(l => l.toLowerCase());
+
+  // Exchange tag (🏦 emoji or exchange names)
+  if (allLabelsOriginal.some(l => l.includes('🏦')) ||
+      allLabels.some(l =>
     l.includes('binance') || l.includes('coinbase') ||
     l.includes('kraken') || l.includes('bybit') ||
     l.includes('okx') || l.includes('huobi') ||
     l.includes('kucoin') || l.includes('bitfinex') ||
     l.includes('gemini') || l.includes('bitstamp') ||
     l.includes('gate.io') || l.includes('crypto.com') ||
-    l.includes('mexc') || l.includes('exchange')
+    l.includes('mexc') || l.includes('exchange') ||
+    l.includes('ceffu')
   )) {
     tags.push('exchange');
   }
@@ -47,12 +51,15 @@ export function enrichTags(movement: Movement): Movement {
     tags.push('market_maker');
   }
 
-  // Protocol tag
-  if (allLabels.some(l =>
+  // Protocol tag (🤖 emoji or protocol names)
+  if (allLabelsOriginal.some(l => l.includes('🤖')) ||
+      allLabels.some(l =>
     l.includes('uniswap') || l.includes('aave') ||
     l.includes('compound') || l.includes('maker') ||
     l.includes('curve') || l.includes('balancer') ||
-    l.includes('protocol') || l.includes('contract')
+    l.includes('morpho') || l.includes('euler') ||
+    l.includes('protocol') || l.includes('contract') ||
+    l.includes('vault') || l.includes('pool')
   )) {
     tags.push('protocol');
   }
@@ -72,7 +79,8 @@ export function enrichTags(movement: Movement): Movement {
   if (allLabels.some(l =>
     l.includes('smart') || l.includes('smart trader') ||
     l.includes('smart money') || l.includes('30d smart') ||
-    l.includes('90d smart')
+    l.includes('90d smart') || l.includes('elite') ||
+    l.includes('dex trader') || l.includes('legendary')
   )) {
     tags.push('smart_money');
   }

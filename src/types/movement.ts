@@ -17,7 +17,8 @@ export type MovementTag =
   | 'market_maker'  // Market making entity
   | 'protocol'      // DeFi protocol
   | 'bridge'        // Bridge contract
-  | 'whale'         // Large holder
+  | 'whale'         // Large holder ($10M+)
+  | 'mega_whale'    // Extra large holder ($50M+)
   | 'stablecoin'    // Stablecoin transfer
   | 'defi'          // DeFi activity
   | 'smart_money';  // Nansen smart money label
