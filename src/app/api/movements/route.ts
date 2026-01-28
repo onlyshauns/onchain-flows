@@ -57,24 +57,45 @@ export async function GET(request: NextRequest) {
 
     console.log('[API] Starting data fetch...');
 
-    // Simplified: Only fetch ethereum transfers (most reliable)
-    const transfers = await client.getTransfers({
-      chains: ['ethereum'],
-      minUsd: THRESHOLDS.ethereum,
-      since,
-    }).catch(err => {
-      console.error('[API] Transfer fetch error:', err);
-      return [];
+    // Fetch from all supported chains (except Hyperliquid which uses different API)
+    const fetchPromises = (['ethereum', 'solana', 'base'] as const).map(async chain => {
+      try {
+        console.log(`[API] Fetching ${chain}...`);
+        const chainTransfers = await client.getTransfers({
+          chains: [chain],
+          minUsd: THRESHOLDS[chain],
+          since,
+        });
+        console.log(`[API] ${chain}: ${chainTransfers.length} transfers`);
+
+        // Normalize with correct chain
+        return chainTransfers.map(t => normalizeTransfer(t, chain));
+      } catch (err) {
+        console.error(`[API] ${chain} fetch error:`, err);
+        return [];
+      }
     });
 
-    console.log(`[API] Fetched ${transfers.length} transfers`);
+    // Fetch Hyperliquid separately (placeholder for now)
+    const hlPromise = fetchHyperliquidMovements(since, THRESHOLDS.hyperliquid)
+      .catch(err => {
+        console.error('[API] Hyperliquid fetch error:', err);
+        return [];
+      });
 
-    // Normalize transfers
-    const normalizedTransfers: Movement[] = transfers.map(t =>
-      normalizeTransfer(t, 'ethereum')
-    );
+    // Wait for all fetches
+    const [chainResults, hlResults] = await Promise.all([
+      Promise.all(fetchPromises),
+      hlPromise,
+    ]);
 
-    console.log(`[API] Normalized ${normalizedTransfers.length} transfers`);
+    // Flatten all transfers
+    const normalizedTransfers: Movement[] = [
+      ...chainResults.flat(),
+      ...hlResults,
+    ];
+
+    console.log(`[API] Total normalized: ${normalizedTransfers.length} transfers`);
 
     // Enrichment pipeline
     let movements = normalizedTransfers
