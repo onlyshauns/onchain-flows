@@ -1,11 +1,45 @@
 import { Chain } from '@/types/flows';
 import {
-  NansenWhaleFlowResponse,
-  NansenSmartMoneyResponse,
-  NansenTokenScreenerResponse,
+  NansenTransfersResponse,
+  NansenFlowIntelligenceResponse,
+  NansenFlowsResponse,
+  NansenAddressTransactionsResponse,
+  NansenAddressLabelsResponse,
+  NansenChain,
+  NansenTimeframe,
+  NansenHolderLabel,
 } from './types';
 
-const NANSEN_BASE_URL = 'https://api.nansen.ai/api/beta';
+const NANSEN_BASE_URL = 'https://api.nansen.ai';
+const NANSEN_API_V1 = `${NANSEN_BASE_URL}/api/v1`;
+const NANSEN_API_BETA = `${NANSEN_BASE_URL}/api/beta`;
+
+// Map our chain names to Nansen's format
+const CHAIN_MAP: Record<Chain, NansenChain> = {
+  ethereum: 'ethereum',
+  solana: 'solana',
+  base: 'base',
+  arbitrum: 'arbitrum',
+  optimism: 'optimism',
+  polygon: 'polygon',
+};
+
+// Popular tokens for each chain (for flow tracking)
+const CHAIN_TOKENS: Record<NansenChain, string[]> = {
+  ethereum: [
+    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC
+    '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
+    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', // WBTC
+    '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH
+  ],
+  solana: ['So11111111111111111111111111111111111111112'], // SOL
+  base: ['0x833589fcd6edb6e08f4c7c32d4f71b54bda02913'], // USDC on Base
+  arbitrum: ['0xaf88d065e77c8cc2239327c5edb3a432268e5831'], // USDC on Arbitrum
+  optimism: ['0x7f5c764cbc14f9669b88837ca1490cca17c31607'], // USDC on Optimism
+  polygon: ['0x2791bca1f2de4661ed88a30c99a7a9449aa84174'], // USDC on Polygon
+  avalanche: [],
+  'bnb-chain': [],
+};
 
 export class NansenClient {
   private apiKey: string;
@@ -18,34 +52,32 @@ export class NansenClient {
   }
 
   /**
-   * Make a request to the Nansen API
+   * Make a POST request to the Nansen API
    */
-  private async request<T>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
-    const url = new URL(`${NANSEN_BASE_URL}${endpoint}`);
-
-    // Add query parameters
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        url.searchParams.append(key, String(value));
-      }
-    });
+  private async post<T>(endpoint: string, body: Record<string, any>): Promise<T> {
+    const url = `${endpoint}`;
 
     try {
-      const response = await fetch(url.toString(), {
-        method: 'GET',
+      console.log('[Nansen API] POST', url, JSON.stringify(body, null, 2));
+
+      const response = await fetch(url, {
+        method: 'POST',
         headers: {
-          'X-API-Key': this.apiKey,
+          'apiKey': this.apiKey,
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('[Nansen API] Error:', response.status, errorText);
         throw new Error(`Nansen API error (${response.status}): ${errorText}`);
       }
 
       const data = await response.json();
+      console.log('[Nansen API] Success:', Object.keys(data));
       return data as T;
     } catch (error) {
       if (error instanceof Error) {
@@ -56,55 +88,152 @@ export class NansenClient {
   }
 
   /**
-   * Get whale movements (large transfers)
+   * Get token transfers (POST /api/v1/tgm/transfers)
    */
-  async getWhaleMovements(chain: Chain, limit: number = 50): Promise<NansenWhaleFlowResponse> {
-    return this.request<NansenWhaleFlowResponse>('/tgm/flow-intelligence', {
-      chain,
-      limit,
-      minAmount: 100000, // $100k minimum
+  async getTokenTransfers(
+    chain: Chain,
+    tokenAddress: string,
+    options: {
+      minValueUsd?: number;
+      limit?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {}
+  ): Promise<NansenTransfersResponse> {
+    const nansenChain = CHAIN_MAP[chain];
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+    return this.post<NansenTransfersResponse>(`${NANSEN_API_V1}/tgm/transfers`, {
+      chain: nansenChain,
+      token_address: tokenAddress,
+      date: {
+        from: options.dateFrom || oneHourAgo.toISOString(),
+        to: options.dateTo || now.toISOString(),
+      },
+      filters: {
+        transfer_value_usd: { min: options.minValueUsd || 100000 },
+      },
+      pagination: {
+        page: 1,
+        per_page: options.limit || 100,
+      },
+      order_by: {
+        field: 'transfer_value_usd',
+        direction: 'DESC',
+      },
     });
   }
 
   /**
-   * Get DeFi activities (swaps, liquidity, etc.)
+   * Get flow intelligence (POST /api/v1/tgm/flow-intelligence)
    */
-  async getDeFiActivities(chain: Chain, limit: number = 50): Promise<NansenWhaleFlowResponse> {
-    return this.request<NansenWhaleFlowResponse>('/tgm/flows', {
-      chain,
-      limit,
-      category: 'defi',
+  async getFlowIntelligence(
+    chain: Chain,
+    tokenAddress: string,
+    timeframe: NansenTimeframe = '1h'
+  ): Promise<NansenFlowIntelligenceResponse> {
+    const nansenChain = CHAIN_MAP[chain];
+
+    return this.post<NansenFlowIntelligenceResponse>(`${NANSEN_API_V1}/tgm/flow-intelligence`, {
+      chain: nansenChain,
+      token_address: tokenAddress,
+      timeframe,
     });
   }
 
   /**
-   * Get token launches and trending tokens
+   * Get TGM flows by holder label (POST /api/v1/tgm/flows)
    */
-  async getTokenLaunches(chain: Chain, limit: number = 50): Promise<NansenTokenScreenerResponse> {
-    return this.request<NansenTokenScreenerResponse>('/token-screener', {
-      chain,
-      limit,
-      sortBy: 'created_at',
-      sortOrder: 'desc',
+  async getTGMFlows(
+    chain: Chain,
+    tokenAddress: string,
+    label: NansenHolderLabel,
+    options: {
+      limit?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {}
+  ): Promise<NansenFlowsResponse> {
+    const nansenChain = CHAIN_MAP[chain];
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    return this.post<NansenFlowsResponse>(`${NANSEN_API_V1}/tgm/flows`, {
+      chain: nansenChain,
+      token_address: tokenAddress,
+      label,
+      date: {
+        from: options.dateFrom || oneDayAgo.toISOString().split('T')[0],
+        to: options.dateTo || now.toISOString().split('T')[0],
+      },
+      pagination: {
+        page: 1,
+        per_page: options.limit || 100,
+      },
     });
   }
 
   /**
-   * Get smart money flows
+   * Get address transactions (POST /api/v1/profiler/address/transactions)
    */
-  async getSmartMoneyFlows(chain: Chain, limit: number = 50): Promise<NansenSmartMoneyResponse> {
-    return this.request<NansenSmartMoneyResponse>('/smart-money/flows', {
-      chain,
-      limit,
-      timeRange: '30d',
+  async getAddressTransactions(
+    chain: Chain,
+    address: string,
+    options: {
+      minVolumeUsd?: number;
+      limit?: number;
+      dateFrom?: string;
+      dateTo?: string;
+    } = {}
+  ): Promise<NansenAddressTransactionsResponse> {
+    const nansenChain = CHAIN_MAP[chain];
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    return this.post<NansenAddressTransactionsResponse>(
+      `${NANSEN_API_V1}/profiler/address/transactions`,
+      {
+        address,
+        chain: nansenChain,
+        date: {
+          from: options.dateFrom || oneDayAgo.toISOString(),
+          to: options.dateTo || now.toISOString(),
+        },
+        hide_spam_token: true,
+        filters: {
+          volume_usd: { min: options.minVolumeUsd || 100000 },
+        },
+        pagination: {
+          page: 1,
+          per_page: options.limit || 100,
+        },
+        order_by: {
+          field: 'block_timestamp',
+          direction: 'DESC',
+        },
+      }
+    );
+  }
+
+  /**
+   * Get address labels (POST /api/beta/profiler/address/labels)
+   */
+  async getAddressLabels(chain: Chain, address: string): Promise<NansenAddressLabelsResponse> {
+    const nansenChain = CHAIN_MAP[chain];
+
+    return this.post<NansenAddressLabelsResponse>(`${NANSEN_API_BETA}/profiler/address/labels`, {
+      chain: nansenChain,
+      address,
     });
   }
 
   /**
-   * Get flow by transaction hash
+   * Get popular tokens for a chain
    */
-  async getFlowByTxHash(chain: Chain, txHash: string): Promise<any> {
-    return this.request(`/tgm/transactions/${txHash}`, { chain });
+  getPopularTokens(chain: Chain): string[] {
+    const nansenChain = CHAIN_MAP[chain];
+    return CHAIN_TOKENS[nansenChain] || [];
   }
 }
 
