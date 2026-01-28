@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
           // Use Nansen's proper label filtering for Smart Money
           console.log(`[API] Fetching Smart Money for ${chain}, token: ${tokenAddress}`);
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 5000,
+            minValueUsd: 10000, // $10k+ for Smart Trader activity
             limit: 100,
             fromIncludeSmartMoneyLabels: ['Smart Trader'],
             toIncludeSmartMoneyLabels: ['Smart Trader'],

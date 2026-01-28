@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         try {
           // Use Nansen's proper label filtering for Funds
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 100000,
+            minValueUsd: 1000000, // $1M+ for institutional fund movements
             limit: 100,
             fromIncludeSmartMoneyLabels: ['Fund'],
             toIncludeSmartMoneyLabels: ['Fund'],

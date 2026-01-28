@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         try {
           // Use Nansen's proper label filtering for Public Figure
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 25000,
+            minValueUsd: 100000, // $100k+ for Public Figure activity
             limit: 100,
             fromIncludeSmartMoneyLabels: ['Public Figure'],
             toIncludeSmartMoneyLabels: ['Public Figure'],

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { TabNavigation } from '@/components/layout/TabNavigation';
+import { TabDescription } from '@/components/layout/TabDescription';
 import { ChainFilter } from '@/components/layout/ChainFilter';
 import { FlowList } from '@/components/flows/FlowList';
 import { useFlows } from '@/context/FlowsContext';
@@ -89,6 +90,7 @@ export default function Home() {
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <Header />
       <TabNavigation />
+      <TabDescription tab={activeTab} />
       <ChainFilter />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
