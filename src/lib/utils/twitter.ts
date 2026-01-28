@@ -30,7 +30,7 @@ export function generateTweetText(flow: Flow): string {
       break;
   }
 
-  return `${emoji} ${typeDescription}: ${amount} ${token} on ${chain}
+  return `${emoji} ${typeDescription}: ${amount} worth of ${token} on ${chain}
 
 From: ${fromLabel}
 To: ${toLabel}
