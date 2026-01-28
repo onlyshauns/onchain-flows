@@ -55,24 +55,37 @@ export async function GET(request: NextRequest) {
 
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen (Labeled Wallets $1M+)';
+
+            console.log(`[DEBUG] ${chain} ${tokenAddress}: Received ${response.data.length} transfers from Nansen`);
+
+            let filteredUnknown = 0;
+            let filteredSameEntity = 0;
+            let filteredTokenSymbol = 0;
+            let added = 0;
+
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
               // Only include if at least one side has a label
               if (fromLabel === 'Unknown Wallet' && toLabel === 'Unknown Wallet') {
+                filteredUnknown++;
                 return;
               }
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {
+                filteredSameEntity++;
                 return;
               }
 
               // Skip if no token symbol available or if it's "Unknown"
               if (!transfer.token_symbol || transfer.token_symbol.trim() === '' || transfer.token_symbol === 'Unknown') {
+                filteredTokenSymbol++;
                 return;
               }
+
+              added++;
 
               allFlows.push({
                 id: transfer.transaction_hash,
@@ -100,6 +113,8 @@ export async function GET(request: NextRequest) {
                 },
               });
             });
+
+            console.log(`[DEBUG] ${chain} ${tokenAddress}: Filtered - Unknown: ${filteredUnknown}, SameEntity: ${filteredSameEntity}, TokenSymbol: ${filteredTokenSymbol}, Added: ${added}`);
           }
         } catch (error) {
           console.error(`[API] Nansen error for ${chain}:`, error);
