@@ -7,15 +7,17 @@ interface CacheEntry {
 }
 
 /**
- * LRU cache for movements with 30s TTL
+ * LRU cache for movements with 1-hour TTL
+ * Whale movements should persist for hours, not seconds
  */
 export class MovementCache {
   private cache: LRUCache<string, CacheEntry>;
+  private readonly CACHE_TTL = 60 * 60 * 1000; // 1 hour in milliseconds
 
   constructor() {
     this.cache = new LRUCache<string, CacheEntry>({
-      max: 100,      // Store 100 different query results
-      ttl: 30_000,   // 30 second TTL
+      max: 100,                    // Store 100 different query results
+      ttl: this.CACHE_TTL,         // 1 hour TTL
     });
   }
 
@@ -43,8 +45,8 @@ export class MovementCache {
       return null;
     }
 
-    // Check if stale (older than 30s)
-    if (Date.now() - entry.fetchedAt > 30_000) {
+    // Check if stale (older than 1 hour)
+    if (Date.now() - entry.fetchedAt > this.CACHE_TTL) {
       this.cache.delete(key);
       return null;
     }
@@ -76,7 +78,7 @@ export class MovementCache {
     return {
       size: this.cache.size,
       max: this.cache.max,
-      ttl: 30_000,
+      ttl: this.CACHE_TTL,
     };
   }
 }

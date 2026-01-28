@@ -50,8 +50,9 @@ export default function Home() {
     // Initial fetch
     fetchMovements();
 
-    // Set up auto-refresh every 30 seconds
-    interval = setInterval(fetchMovements, 30000);
+    // Set up auto-refresh every 5 minutes (data is cached for 1 hour)
+    // More frequent refreshes aren't needed since movements persist longer
+    interval = setInterval(fetchMovements, 5 * 60 * 1000);
 
     return () => {
       isCancelled = true;

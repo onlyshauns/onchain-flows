@@ -155,7 +155,9 @@ export async function GET(request: NextRequest) {
       },
     }, {
       headers: {
-        'Cache-Control': 'public, s-maxage=10, stale-while-revalidate=30',
+        // Cache for 5 minutes on CDN, allow stale content for 10 minutes
+        // This reduces API load while keeping data reasonably fresh
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
     });
 
