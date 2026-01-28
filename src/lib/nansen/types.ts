@@ -149,6 +149,6 @@ export interface NansenDEXTradesResponse {
 }
 
 // Common types
-export type NansenChain = 'ethereum' | 'solana' | 'base' | 'arbitrum' | 'optimism' | 'polygon' | 'avalanche' | 'bnb-chain';
+export type NansenChain = 'ethereum' | 'solana' | 'base' | 'arbitrum' | 'optimism' | 'polygon' | 'avalanche' | 'bnb-chain' | 'hyperliquid';
 export type NansenTimeframe = '5m' | '1h' | '6h' | '12h' | '1d' | '7d';
 export type NansenHolderLabel = 'whale' | 'public_figure' | 'smart_money' | 'exchange' | 'top_100_holders';
