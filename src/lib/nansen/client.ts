@@ -58,28 +58,52 @@ export class NansenClient {
     const url = `${endpoint}`;
 
     try {
-      console.log('[Nansen API] POST', url, JSON.stringify(body, null, 2));
+      console.log('[Nansen API] POST Request:', {
+        url,
+        hasApiKey: !!this.apiKey,
+        apiKeyPrefix: this.apiKey?.substring(0, 10) + '...',
+        body: JSON.stringify(body, null, 2),
+      });
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'apiKey': this.apiKey,
+          'X-API-Key': this.apiKey, // Try both header formats
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: JSON.stringify(body),
       });
 
+      console.log('[Nansen API] Response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+      });
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[Nansen API] Error:', response.status, errorText);
+        console.error('[Nansen API] Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          body: errorText,
+        });
         throw new Error(`Nansen API error (${response.status}): ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('[Nansen API] Success:', Object.keys(data));
+      console.log('[Nansen API] Success Response:', {
+        hasData: !!data.data,
+        dataLength: Array.isArray(data.data) ? data.data.length : 'not array',
+        keys: Object.keys(data),
+      });
       return data as T;
     } catch (error) {
+      console.error('[Nansen API] Request Failed:', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
       if (error instanceof Error) {
         throw new Error(`Nansen API request failed: ${error.message}`);
       }
@@ -102,14 +126,25 @@ export class NansenClient {
   ): Promise<NansenTransfersResponse> {
     const nansenChain = CHAIN_MAP[chain];
     const now = new Date();
-    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Use 24h instead of 1h
+
+    // Format dates as ISO 8601
+    const fromDate = options.dateFrom || twentyFourHoursAgo.toISOString();
+    const toDate = options.dateTo || now.toISOString();
+
+    console.log('[Nansen] Token Transfers Request:', {
+      chain: nansenChain,
+      token: tokenAddress,
+      dateRange: `${fromDate} to ${toDate}`,
+      minUsd: options.minValueUsd || 100000,
+    });
 
     return this.post<NansenTransfersResponse>(`${NANSEN_API_V1}/tgm/transfers`, {
       chain: nansenChain,
       token_address: tokenAddress,
       date: {
-        from: options.dateFrom || oneHourAgo.toISOString(),
-        to: options.dateTo || now.toISOString(),
+        from: fromDate,
+        to: toDate,
       },
       filters: {
         transfer_value_usd: { min: options.minValueUsd || 100000 },
