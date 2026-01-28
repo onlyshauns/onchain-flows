@@ -17,8 +17,12 @@ export function ChainBadge({ chain, size = 'sm' }: ChainBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full font-medium text-white ${sizeClasses[size]}`}
-      style={{ backgroundColor: config.color }}
+      className={`inline-flex items-center gap-1 rounded-full font-medium border border-opacity-20 transition-all ${sizeClasses[size]}`}
+      style={{
+        backgroundColor: `${config.color}15`,  // 15 = ~8% opacity in hex
+        color: config.color,
+        borderColor: config.color
+      }}
     >
       <span>{config.icon}</span>
       <span>{config.symbol}</span>

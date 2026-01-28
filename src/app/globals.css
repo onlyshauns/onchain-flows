@@ -1,8 +1,18 @@
 @import "tailwindcss";
 
+/* Nansen Brand Colors */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Light Mode (Nansen Light Theme) */
+  --nansen-light: #edf2f6;
+  --nansen-dark: #061019;
+  --nansen-accent: #00ffa7;
+  --nansen-accent-dim: #00cc85;
+
+  --background: var(--nansen-light);
+  --foreground: var(--nansen-dark);
+  --card-bg: #ffffff;
+  --card-border: #d1dce5;
+  --accent: var(--nansen-accent);
 }
 
 @theme inline {
@@ -14,8 +24,12 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Dark Mode (Nansen Dark Theme) */
+    --background: var(--nansen-dark);
+    --foreground: var(--nansen-light);
+    --card-bg: #0d1921;
+    --card-border: #1a2a38;
+    --accent: var(--nansen-accent);
   }
 }
 
@@ -23,4 +37,24 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Nansen-style accent glow effect */
+.nansen-glow {
+  box-shadow: 0 0 20px rgba(0, 255, 167, 0.3);
+}
+
+.nansen-glow-strong {
+  box-shadow: 0 0 30px rgba(0, 255, 167, 0.5);
+}
+
+/* Scrollbar styling to match Nansen */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

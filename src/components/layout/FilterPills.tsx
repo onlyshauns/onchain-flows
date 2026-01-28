@@ -71,8 +71,8 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
       {/* Chain Filters */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Filter by Chain</h3>
-          <span className="text-xs text-zinc-400 dark:text-zinc-500">
+          <h3 className="text-xs font-medium text-[var(--foreground)] opacity-60">Filter by Chain</h3>
+          <span className="text-xs text-[var(--foreground)] opacity-40">
             {activeChains.length} selected
           </span>
         </div>
@@ -84,8 +84,8 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               className={clsx(
                 'px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1.5',
                 activeChains.includes(chain.id)
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-md nansen-glow'
+                  : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:shadow-sm'
               )}
             >
               <span>{chain.icon}</span>
@@ -98,32 +98,32 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
       {/* Category Filters */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Filter by Category</h3>
+          <h3 className="text-xs font-medium text-[var(--foreground)] opacity-60">Filter by Category</h3>
           <button
             onClick={() => setShowHelp(!showHelp)}
-            className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1"
+            className="text-xs text-[var(--accent)] hover:opacity-80 flex items-center gap-1 transition-all"
           >
             {showHelp ? '✕ Hide' : 'ℹ️ What do these mean?'}
           </button>
         </div>
 
         {showHelp && (
-          <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs space-y-2">
+          <div className="mb-3 p-3 bg-[var(--card-bg)] border border-[var(--accent)] border-opacity-30 rounded-lg text-xs space-y-2">
             <div>
-              <span className="font-semibold text-blue-900 dark:text-blue-100">Powered by Nansen API</span>
-              <p className="text-blue-800 dark:text-blue-200 mt-1">
+              <span className="font-semibold text-[var(--accent)]">Powered by Nansen API</span>
+              <p className="text-[var(--foreground)] opacity-80 mt-1">
                 All data enriched with Nansen labels, entity mapping, and smart money tracking
               </p>
             </div>
-            <div className="space-y-1.5 pt-2 border-t border-blue-200 dark:border-blue-800">
+            <div className="space-y-1.5 pt-2 border-t border-[var(--card-border)]">
               {CATEGORY_FILTERS.map(filter => (
                 <div key={filter.id}>
-                  <span className="font-medium text-blue-900 dark:text-blue-100">{filter.label}:</span>
-                  <span className="text-blue-700 dark:text-blue-300 ml-1">{filter.description}</span>
+                  <span className="font-medium text-[var(--foreground)]">{filter.label}:</span>
+                  <span className="text-[var(--foreground)] opacity-70 ml-1">{filter.description}</span>
                 </div>
               ))}
             </div>
-            <div className="pt-2 border-t border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300">
+            <div className="pt-2 border-t border-[var(--card-border)] text-[var(--foreground)] opacity-80">
               <strong>Thresholds:</strong> ETH $5M+ | SOL/BASE/HL $1M+
             </div>
           </div>
@@ -137,8 +137,8 @@ export function FilterPills({ activeCategory, activeChains, onSelectCategory, on
               className={clsx(
                 'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
                 activeCategory === filter.id
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                  ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-md nansen-glow'
+                  : 'bg-[var(--card-bg)] border border-[var(--card-border)] text-[var(--foreground)] hover:border-[var(--accent)] hover:shadow-sm'
               )}
               title={filter.description}
             >

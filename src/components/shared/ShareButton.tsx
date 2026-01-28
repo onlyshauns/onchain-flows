@@ -31,7 +31,7 @@ export function ShareButton({ flow, variant = 'primary' }: ShareButtonProps) {
     return (
       <button
         onClick={handleCopy}
-        className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
+        className="p-2 rounded-lg bg-[var(--card-bg)] hover:bg-[var(--accent)] hover:bg-opacity-10 border border-[var(--card-border)] hover:border-[var(--accent)] transition-all text-[var(--foreground)] opacity-60 hover:opacity-100"
         title="Copy tweet"
       >
         {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
@@ -43,14 +43,14 @@ export function ShareButton({ flow, variant = 'primary' }: ShareButtonProps) {
     <div className="flex gap-2">
       <button
         onClick={handleTwitterShare}
-        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-zinc-800 text-white rounded-lg font-medium transition-colors text-sm"
+        className="flex items-center gap-2 px-4 py-2 bg-[var(--nansen-dark)] hover:bg-opacity-90 text-white rounded-lg font-medium transition-all text-sm shadow-sm"
       >
         <XIcon className="w-4 h-4" />
         Share
       </button>
       <button
         onClick={handleCopy}
-        className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-zinc-600 dark:text-zinc-400"
+        className="p-2 rounded-lg bg-[var(--card-bg)] hover:bg-[var(--accent)] hover:bg-opacity-10 border border-[var(--card-border)] hover:border-[var(--accent)] transition-all text-[var(--foreground)] opacity-60 hover:opacity-100"
         title={copied ? 'Copied!' : 'Copy tweet'}
       >
         {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
