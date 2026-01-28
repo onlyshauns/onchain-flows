@@ -51,8 +51,8 @@ export async function GET(request: NextRequest) {
           const response = await client.getTokenTransfers(chain, tokenAddress, {
             minValueUsd: 25000,
             limit: 100,
-            labelType: 'smart_money',
-            includeSmartMoneyLabels: ['Public Figure'],
+            fromIncludeSmartMoneyLabels: ['Public Figure'],
+            toIncludeSmartMoneyLabels: ['Public Figure'],
           });
 
           if (response.data && response.data.length > 0) {

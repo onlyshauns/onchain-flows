@@ -121,8 +121,8 @@ export class NansenClient {
       limit?: number;
       dateFrom?: string;
       dateTo?: string;
-      labelType?: 'smart_money' | 'all';
-      includeSmartMoneyLabels?: string[];
+      fromIncludeSmartMoneyLabels?: string[];
+      toIncludeSmartMoneyLabels?: string[];
     } = {}
   ): Promise<NansenTransfersResponse> {
     const nansenChain = CHAIN_MAP[chain];
@@ -136,9 +136,12 @@ export class NansenClient {
       transfer_value_usd: { min: options.minValueUsd || 100000 },
     };
 
-    // Add label filtering if specified
-    if (options.includeSmartMoneyLabels && options.includeSmartMoneyLabels.length > 0) {
-      filters.include_smart_money_labels = options.includeSmartMoneyLabels;
+    // Add label filtering if specified (CORRECT Nansen parameter names)
+    if (options.fromIncludeSmartMoneyLabels && options.fromIncludeSmartMoneyLabels.length > 0) {
+      filters.from_include_smart_money_labels = options.fromIncludeSmartMoneyLabels;
+    }
+    if (options.toIncludeSmartMoneyLabels && options.toIncludeSmartMoneyLabels.length > 0) {
+      filters.to_include_smart_money_labels = options.toIncludeSmartMoneyLabels;
     }
 
     console.log('[Nansen] Token Transfers Request:', {
@@ -146,8 +149,8 @@ export class NansenClient {
       token: tokenAddress,
       dateRange: `${fromDate} to ${toDate}`,
       minUsd: options.minValueUsd || 100000,
-      labelType: options.labelType,
-      labels: options.includeSmartMoneyLabels,
+      fromLabels: options.fromIncludeSmartMoneyLabels,
+      toLabels: options.toIncludeSmartMoneyLabels,
     });
 
     const body: any = {
@@ -169,11 +172,6 @@ export class NansenClient {
         },
       ],
     };
-
-    // Add label_type if specified
-    if (options.labelType) {
-      body.label_type = options.labelType;
-    }
 
     return this.post<NansenTransfersResponse>(`${NANSEN_API_V1}/tgm/transfers`, body);
   }
