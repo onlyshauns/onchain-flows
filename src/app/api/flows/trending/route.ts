@@ -158,8 +158,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Sort by timestamp DESC (most recent first)
-  allFlows.sort((a, b) => b.timestamp - a.timestamp);
+  // Sort by priority: known labels > USD value > timestamp
+  allFlows.sort((a, b) => {
+    const aHasLabel = a.from.label !== 'Unknown Wallet' || a.to.label !== 'Unknown Wallet';
+    const bHasLabel = b.from.label !== 'Unknown Wallet' || b.to.label !== 'Unknown Wallet';
+
+    if (aHasLabel && !bHasLabel) return -1;
+    if (!aHasLabel && bHasLabel) return 1;
+
+    if (Math.abs(a.amountUsd - b.amountUsd) > 1000000) {
+      return b.amountUsd - a.amountUsd;
+    }
+
+    return b.timestamp - a.timestamp;
+  });
 
   console.log('[API] Total trending flows:', allFlows.length, 'Source:', dataSource);
 

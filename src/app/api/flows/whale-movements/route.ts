@@ -175,8 +175,26 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Sort by timestamp DESC (most recent first)
-  allFlows.sort((a, b) => b.timestamp - a.timestamp);
+  // Sort by priority:
+  // 1. Has known labels (not "Unknown Wallet")
+  // 2. Higher USD value
+  // 3. More recent timestamp
+  allFlows.sort((a, b) => {
+    const aHasLabel = a.from.label !== 'Unknown Wallet' || a.to.label !== 'Unknown Wallet';
+    const bHasLabel = b.from.label !== 'Unknown Wallet' || b.to.label !== 'Unknown Wallet';
+
+    // Prioritize flows with labels
+    if (aHasLabel && !bHasLabel) return -1;
+    if (!aHasLabel && bHasLabel) return 1;
+
+    // If both have labels or both don't, sort by USD value
+    if (Math.abs(a.amountUsd - b.amountUsd) > 1000000) {
+      return b.amountUsd - a.amountUsd;
+    }
+
+    // If similar value, sort by timestamp
+    return b.timestamp - a.timestamp;
+  });
 
   console.log('[API] Total whale movements:', allFlows.length, 'Source:', dataSource);
 
