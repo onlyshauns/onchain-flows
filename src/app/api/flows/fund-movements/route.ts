@@ -4,6 +4,31 @@ import { getEtherscanClient } from '@/lib/etherscan/client';
 import { FUNDS, getLabelForAddress } from '@/lib/etherscan/addresses';
 import { Chain, Flow } from '@/types/flows';
 
+/**
+ * Check if a transfer is between the same entity
+ */
+function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
+  if (!fromLabel || !toLabel || fromLabel === 'Unknown Wallet' || toLabel === 'Unknown Wallet') {
+    return false;
+  }
+
+  const from = fromLabel.toLowerCase();
+  const to = toLabel.toLowerCase();
+
+  const entities = [
+    'binance', 'coinbase', 'kraken', 'bybit', 'okx', 'huobi', 'kucoin',
+    'bitfinex', 'gemini', 'bitstamp', 'ftx', 'gate.io', 'crypto.com', 'mexc',
+  ];
+
+  for (const entity of entities) {
+    if (from.includes(entity) && to.includes(entity)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -14,75 +39,68 @@ export async function GET(request: NextRequest) {
   let allFlows: Flow[] = [];
   let dataSource = 'None';
 
-  // Try Nansen first
+  // Try Nansen first - track specific fund addresses
   try {
     const client = getNansenClient();
 
     for (const chainParam of chains) {
       const chain = chainParam.toLowerCase() as Chain;
-      const popularTokens = client.getPopularTokens(chain);
 
-      if (popularTokens.length === 0) continue;
-
-      for (const tokenAddress of popularTokens.slice(0, 2)) {
+      // Track each fund address individually
+      for (const fund of FUNDS) {
         try {
-          const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 1000000,
-            limit: 50,
+          console.log(`[API] Tracking ${fund.label} on ${chain}...`);
+
+          const response = await client.getAddressTransactions(chain, fund.address, {
+            minVolumeUsd: 50000, // $50k+ transactions
+            limit: 20,
           });
 
           if (response.data && response.data.length > 0) {
-            // Filter for funds
-            response.data
-              .filter(transfer =>
-                (transfer.from_address_name?.toLowerCase().includes('fund') ||
-                 transfer.from_address_name?.toLowerCase().includes('capital') ||
-                 transfer.from_address_name?.toLowerCase().includes('grayscale') ||
-                 transfer.from_address_name?.toLowerCase().includes('blackrock') ||
-                 transfer.from_address_name?.toLowerCase().includes('fidelity') ||
-                 transfer.from_address_name?.toLowerCase().includes('ark') ||
-                 transfer.from_address_name?.toLowerCase().includes('paradigm') ||
-                 transfer.from_address_name?.toLowerCase().includes('a16z')) ||
-                (transfer.to_address_name?.toLowerCase().includes('fund') ||
-                 transfer.to_address_name?.toLowerCase().includes('capital') ||
-                 transfer.to_address_name?.toLowerCase().includes('grayscale') ||
-                 transfer.to_address_name?.toLowerCase().includes('blackrock') ||
-                 transfer.to_address_name?.toLowerCase().includes('fidelity') ||
-                 transfer.to_address_name?.toLowerCase().includes('ark') ||
-                 transfer.to_address_name?.toLowerCase().includes('paradigm') ||
-                 transfer.to_address_name?.toLowerCase().includes('a16z'))
-              )
-              .forEach((transfer) => {
-                dataSource = 'Nansen';
-                allFlows.push({
-                  id: transfer.transaction_hash,
-                  type: 'whale-movement',
-                  chain,
-                  timestamp: new Date(transfer.block_timestamp).getTime(),
-                  amount: parseFloat(transfer.transfer_amount),
-                  amountUsd: transfer.transfer_value_usd,
-                  token: {
-                    symbol: transfer.token_symbol,
-                    address: transfer.token_address,
-                    name: transfer.token_name,
-                  },
-                  from: {
-                    address: transfer.from_address,
-                    label: transfer.from_address_name || 'Unknown Wallet',
-                  },
-                  to: {
-                    address: transfer.to_address,
-                    label: transfer.to_address_name || 'Unknown Wallet',
-                  },
-                  txHash: transfer.transaction_hash,
-                  metadata: {
-                    category: 'Institutional Flow',
-                  },
-                });
+            dataSource = 'Nansen';
+
+            response.data.forEach((tx: any) => {
+              const fromLabel = tx.from_address === fund.address.toLowerCase()
+                ? fund.label
+                : (tx.from_address_name || 'Unknown Wallet');
+              const toLabel = tx.to_address === fund.address.toLowerCase()
+                ? fund.label
+                : (tx.to_address_name || 'Unknown Wallet');
+
+              // Filter out same-entity transfers
+              if (isSameEntityTransfer(fromLabel, toLabel)) {
+                return;
+              }
+
+              allFlows.push({
+                id: tx.transaction_hash,
+                type: 'whale-movement',
+                chain,
+                timestamp: new Date(tx.block_timestamp).getTime(),
+                amount: parseFloat(tx.transfer_amount || '0'),
+                amountUsd: tx.volume_usd || 0,
+                token: {
+                  symbol: tx.token_symbol || 'ETH',
+                  address: tx.token_address || '',
+                  name: tx.token_name || '',
+                },
+                from: {
+                  address: tx.from_address,
+                  label: fromLabel,
+                },
+                to: {
+                  address: tx.to_address,
+                  label: toLabel,
+                },
+                txHash: tx.transaction_hash,
+                metadata: {
+                  category: 'Institutional Flow',
+                },
               });
+            });
           }
         } catch (error) {
-          console.error(`[API] Nansen error for ${chain}:`, error);
+          console.error(`[API] Nansen error for ${fund.label} on ${chain}:`, error);
         }
       }
     }
@@ -145,8 +163,27 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Sort by timestamp DESC (most recent first)
-  allFlows.sort((a, b) => b.timestamp - a.timestamp);
+  // Sort by priority: fund involvement > USD value > timestamp
+  allFlows.sort((a, b) => {
+    // Prioritize flows involving funds
+    const aHasFund = FUNDS.some(f =>
+      a.from.label === f.label || a.to.label === f.label
+    );
+    const bHasFund = FUNDS.some(f =>
+      b.from.label === f.label || b.to.label === f.label
+    );
+
+    if (aHasFund && !bHasFund) return -1;
+    if (!aHasFund && bHasFund) return 1;
+
+    // Then by USD value
+    if (Math.abs(a.amountUsd - b.amountUsd) > 50000) {
+      return b.amountUsd - a.amountUsd;
+    }
+
+    // Then by timestamp
+    return b.timestamp - a.timestamp;
+  });
 
   console.log('[API] Total fund movements:', allFlows.length, 'Source:', dataSource);
 
