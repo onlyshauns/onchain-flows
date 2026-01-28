@@ -49,18 +49,18 @@ export async function GET(request: NextRequest) {
         try {
           // Use Nansen's proper label filtering for Smart Money
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 50000,
+            minValueUsd: 10000,
             limit: 100,
-            fromIncludeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader'],
-            toIncludeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader'],
+            fromIncludeSmartMoneyLabels: ['Smart Trader'],
+            toIncludeSmartMoneyLabels: ['Smart Trader'],
           });
 
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen (Smart Money Label)';
 
             response.data.forEach((transfer) => {
-              // Filter to $50k-$500k range (exclude whales)
-              if (transfer.transfer_value_usd > 500000) {
+              // Filter to $10k-$1M range (distinct from whale $1M+ movements)
+              if (transfer.transfer_value_usd > 1000000) {
                 return;
               }
 

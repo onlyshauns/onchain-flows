@@ -26,16 +26,6 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   return false;
 }
 
-function isFund(label: string): boolean {
-  const l = label.toLowerCase();
-  return (
-    l.includes('fund') ||
-    l.includes('capital') ||
-    l.includes('ventures') ||
-    l.includes('investment')
-  );
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -57,22 +47,19 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Funds typically move larger amounts ($200k+)
+          // Use Nansen's proper label filtering for Funds
           const response = await client.getTokenTransfers(chain, tokenAddress, {
             minValueUsd: 200000,
             limit: 50,
+            fromIncludeSmartMoneyLabels: ['Fund'],
+            toIncludeSmartMoneyLabels: ['Fund'],
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen';
+            dataSource = 'Nansen (Fund Label)';
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
-
-              // Only include if involves a fund
-              if (!isFund(fromLabel) && !isFund(toLabel)) {
-                return;
-              }
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {
