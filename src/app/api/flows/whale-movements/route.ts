@@ -16,6 +16,11 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   const from = fromLabel.toLowerCase();
   const to = toLabel.toLowerCase();
 
+  // Exact match (same label on both sides)
+  if (from === to) {
+    return true;
+  }
+
   // List of entities to check for internal transfers
   const entities = [
     'binance',

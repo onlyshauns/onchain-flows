@@ -15,6 +15,12 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   const from = fromLabel.toLowerCase();
   const to = toLabel.toLowerCase();
 
+  // Exact match (e.g., "Vitalik Buterin" → "Vitalik Buterin")
+  if (from === to) {
+    return true;
+  }
+
+  // Check for same exchange entity
   const entities = [
     'binance', 'coinbase', 'kraken', 'bybit', 'okx', 'huobi', 'kucoin',
     'bitfinex', 'gemini', 'bitstamp', 'ftx', 'gate.io', 'crypto.com', 'mexc',
