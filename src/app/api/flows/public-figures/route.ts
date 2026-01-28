@@ -26,28 +26,6 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   return false;
 }
 
-function isPublicFigure(label: string): boolean {
-  const l = label.toLowerCase();
-  const keywords = [
-    'vitalik',
-    'buterin',
-    'justin',
-    'sun',
-    'cz',
-    'changpeng',
-    'zhao',
-    'do kwon',
-    'brian armstrong',
-    'sam bankman',
-    'sbf',
-    'michael saylor',
-    'elon musk',
-    'jack dorsey',
-  ];
-
-  return keywords.some(keyword => l.includes(keyword));
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -69,21 +47,20 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
+          // Use Nansen's proper label filtering for Public Figure
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 25000, // $25k+ to catch all public figure activity
-            limit: 100, // Get more to filter
+            minValueUsd: 25000,
+            limit: 100,
+            labelType: 'smart_money',
+            includeSmartMoneyLabels: ['Public Figure'],
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen';
+            dataSource = 'Nansen (Public Figure Label)';
+
             response.data.forEach((transfer) => {
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
-
-              // Only include if involves a public figure
-              if (!isPublicFigure(fromLabel) && !isPublicFigure(toLabel)) {
-                return;
-              }
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {

@@ -28,31 +28,12 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
 
 function isFund(label: string): boolean {
   const l = label.toLowerCase();
-  const keywords = [
-    'fund',
-    'capital',
-    'ventures',
-    'investment',
-    'a16z',
-    'andreessen',
-    'paradigm',
-    'pantera',
-    'polychain',
-    'coinbase ventures',
-    'framework',
-    'sequoia',
-    'tiger global',
-    'dragonfly',
-    'jump',
-    'alameda',
-    'three arrows',
-    '3ac',
-    'galaxy',
-    'dcg',
-    'grayscale',
-  ];
-
-  return keywords.some(keyword => l.includes(keyword));
+  return (
+    l.includes('fund') ||
+    l.includes('capital') ||
+    l.includes('ventures') ||
+    l.includes('investment')
+  );
 }
 
 export async function GET(request: NextRequest) {
@@ -76,8 +57,9 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
+          // Funds typically move larger amounts ($200k+)
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 200000, // $200k+ for institutional funds
+            minValueUsd: 200000,
             limit: 50,
           });
 

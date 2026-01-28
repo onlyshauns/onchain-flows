@@ -26,24 +26,6 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   return false;
 }
 
-function isSmartMoney(label: string): boolean {
-  const l = label.toLowerCase();
-  const keywords = [
-    'smart',
-    'trader',
-    'dex trader',
-    'nft trader',
-    'defi early',
-    'lp expert',
-    'profitable',
-    'alpha',
-    '90d smart',
-    '30d smart',
-  ];
-
-  return keywords.some(keyword => l.includes(keyword));
-}
-
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const chains = searchParams.get('chains')?.split(',') || ['ethereum'];
@@ -65,28 +47,25 @@ export async function GET(request: NextRequest) {
 
       for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          // Smart money range: $50k-$500k (medium-sized strategic moves)
+          // Use Nansen's proper label filtering for Smart Money
           const response = await client.getTokenTransfers(chain, tokenAddress, {
-            minValueUsd: 50000, // $50k minimum
-            limit: 100, // Get more to filter
+            minValueUsd: 50000,
+            limit: 100,
+            labelType: 'smart_money',
+            includeSmartMoneyLabels: ['Smart Trader', '30D Smart Trader', '90D Smart Trader'],
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen (Smart Money Range)';
+            dataSource = 'Nansen (Smart Money Label)';
 
             response.data.forEach((transfer) => {
-              // Filter to $50k-$500k range ONLY (exclude whales)
+              // Filter to $50k-$500k range (exclude whales)
               if (transfer.transfer_value_usd > 500000) {
-                return; // Skip whale-sized transfers
+                return;
               }
 
               const fromLabel = transfer.from_address_label || 'Unknown Wallet';
               const toLabel = transfer.to_address_label || 'Unknown Wallet';
-
-              // Only include if involves smart money
-              if (!isSmartMoney(fromLabel) && !isSmartMoney(toLabel)) {
-                return;
-              }
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {
@@ -129,7 +108,6 @@ export async function GET(request: NextRequest) {
     console.error('[API] Nansen client error:', error);
   }
 
-  // Sort by USD value and timestamp
   allFlows.sort((a, b) => {
     if (Math.abs(a.amountUsd - b.amountUsd) > 50000) {
       return b.amountUsd - a.amountUsd;
