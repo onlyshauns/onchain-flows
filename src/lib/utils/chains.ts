@@ -38,7 +38,7 @@ export const CHAIN_CONFIGS: Record<Chain, ChainConfig> = {
     symbol: 'BASE',
     color: '#0052FF',
     gradient: 'linear-gradient(135deg, #0052FF 0%, #00A3FF 100%)',
-    icon: 'https://cryptologos.cc/logos/usd-base-base-logo.svg?v=035',
+    icon: 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4',
     explorerUrl: 'https://basescan.org/tx/',
     priority: 3,
   },

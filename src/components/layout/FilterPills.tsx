@@ -51,7 +51,7 @@ interface ChainOption {
 const CHAIN_FILTERS: ChainOption[] = [
   { id: 'ethereum', label: 'ETH', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035' },
   { id: 'solana', label: 'SOL', icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=035' },
-  { id: 'base', label: 'BASE', icon: 'https://cryptologos.cc/logos/usd-base-base-logo.svg?v=035' },
+  { id: 'base', label: 'BASE', icon: 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4' },
 ];
 
 interface FilterPillsProps {
