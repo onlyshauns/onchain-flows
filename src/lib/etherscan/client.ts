@@ -1,6 +1,7 @@
-// Etherscan API Client (FREE - 100k calls/day)
-const ETHERSCAN_BASE_URL = 'https://api.etherscan.io/api';
+// Etherscan API V2 Client (FREE - 100k calls/day)
+const ETHERSCAN_BASE_URL = 'https://api.etherscan.io/v2/api';
 const DEFAULT_API_KEY = 'YourApiKeyToken'; // Free tier works without key
+const ETHEREUM_CHAIN_ID = '1';
 
 export interface EtherscanTransaction {
   blockNumber: string;
@@ -43,6 +44,7 @@ export class EtherscanClient {
     } = {}
   ): Promise<EtherscanTransaction[]> {
     const params = new URLSearchParams({
+      chainid: ETHEREUM_CHAIN_ID,
       module: 'account',
       action: 'tokentx',
       address,
@@ -110,6 +112,7 @@ export class EtherscanClient {
     } = {}
   ): Promise<any[]> {
     const params = new URLSearchParams({
+      chainid: ETHEREUM_CHAIN_ID,
       module: 'account',
       action: 'txlist',
       address,
