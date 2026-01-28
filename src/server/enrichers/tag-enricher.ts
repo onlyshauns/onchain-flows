@@ -1,0 +1,93 @@
+import { Movement, MovementTag } from '@/types/movement';
+
+/**
+ * Enrich movement with tags derived from labels and movement characteristics
+ */
+export function enrichTags(movement: Movement): Movement {
+  const tags: MovementTag[] = [];
+
+  // Get all labels for analysis
+  const allLabels = [
+    movement.fromLabel?.toLowerCase(),
+    movement.toLabel?.toLowerCase(),
+  ].filter((l): l is string => Boolean(l));
+
+  // Exchange tag
+  if (allLabels.some(l =>
+    l.includes('binance') || l.includes('coinbase') ||
+    l.includes('kraken') || l.includes('bybit') ||
+    l.includes('okx') || l.includes('huobi') ||
+    l.includes('kucoin') || l.includes('bitfinex') ||
+    l.includes('gemini') || l.includes('bitstamp') ||
+    l.includes('gate.io') || l.includes('crypto.com') ||
+    l.includes('mexc') || l.includes('exchange')
+  )) {
+    tags.push('exchange');
+  }
+
+  // Fund tag
+  if (allLabels.some(l =>
+    l.includes('fund') || l.includes('capital') ||
+    l.includes('ventures') || l.includes('trading') ||
+    l.includes('jump') || l.includes('alameda') ||
+    l.includes('three arrows') || l.includes('3ac') ||
+    l.includes('a16z') || l.includes('paradigm') ||
+    l.includes('dragonfly') || l.includes('pantera') ||
+    l.includes('galaxy') || l.includes('investment')
+  )) {
+    tags.push('fund');
+  }
+
+  // Market maker tag
+  if (allLabels.some(l =>
+    l.includes('wintermute') || l.includes('amber') ||
+    l.includes('jane street') || l.includes('dwr labs') ||
+    l.includes('market maker') || l.includes('liquidity provider')
+  )) {
+    tags.push('market_maker');
+  }
+
+  // Protocol tag
+  if (allLabels.some(l =>
+    l.includes('uniswap') || l.includes('aave') ||
+    l.includes('compound') || l.includes('maker') ||
+    l.includes('curve') || l.includes('balancer') ||
+    l.includes('protocol') || l.includes('contract')
+  )) {
+    tags.push('protocol');
+  }
+
+  // Bridge tag
+  if (movement.movementType === 'bridge' ||
+      allLabels.some(l => l.includes('bridge'))) {
+    tags.push('bridge');
+  }
+
+  // Stablecoin tag
+  if (['USDC', 'USDT', 'DAI', 'BUSD', 'TUSD', 'USDP', 'GUSD', 'PYUSD', 'FRAX'].includes(movement.assetSymbol || '')) {
+    tags.push('stablecoin');
+  }
+
+  // Smart money tag (from Nansen)
+  if (allLabels.some(l =>
+    l.includes('smart') || l.includes('smart trader') ||
+    l.includes('smart money') || l.includes('30d smart') ||
+    l.includes('90d smart')
+  )) {
+    tags.push('smart_money');
+  }
+
+  // DeFi tag (if protocol or DEX involved)
+  if (movement.movementType === 'swap' ||
+      movement.metadata?.dexName ||
+      tags.includes('protocol')) {
+    tags.push('defi');
+  }
+
+  // Whale tag (size-based)
+  if (movement.amountUsd > 10_000_000) {
+    tags.push('whale');
+  }
+
+  return { ...movement, tags };
+}

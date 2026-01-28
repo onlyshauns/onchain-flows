@@ -2,49 +2,27 @@
 
 import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
-import { TabNavigation } from '@/components/layout/TabNavigation';
-import { TabDescription } from '@/components/layout/TabDescription';
-import { ChainFilter } from '@/components/layout/ChainFilter';
+import { FilterPills } from '@/components/layout/FilterPills';
 import { FlowList } from '@/components/flows/FlowList';
-import { useFlows } from '@/context/FlowsContext';
+import { Movement } from '@/types/movement';
 import { Flow } from '@/types/flows';
 
 export default function Home() {
-  const { activeTab, selectedChains, setIsRefreshing, setLastUpdated } = useFlows();
-  const [flows, setFlows] = useState<Flow[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [filter, setFilter] = useState('all');
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  // Fetch flows based on active tab and selected chains
+  // Fetch movements from unified API
   useEffect(() => {
     let isCancelled = false;
     let interval: NodeJS.Timeout;
 
-    // Clear flows immediately and show loading
-    setFlows([]);
-    setIsLoading(true);
-
-    const fetchFlows = async () => {
+    const fetchMovements = async () => {
       try {
-        setIsRefreshing(true);
+        console.log('[Home] Fetching movements...');
 
-        // Map tab to API endpoint
-        const endpointMap: Record<string, string> = {
-          whale: '/api/flows/whale-movements',
-          'public-figures': '/api/flows/public-figures',
-          'fund-movements': '/api/flows/fund-movements',
-          'smart-money': '/api/flows/smart-money',
-          defi: '/api/flows/defi',
-        };
-
-        const endpoint = endpointMap[activeTab];
-        const chainsParam = selectedChains.join(',');
-        // Add timestamp to prevent caching
-        const timestamp = Date.now();
-        const url = `${endpoint}?chains=${chainsParam}&_t=${timestamp}`;
-
-        console.log(`[Home] Fetching ${activeTab}:`, url);
-
-        const response = await fetch(url, {
+        const response = await fetch('/api/movements', {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
@@ -53,48 +31,93 @@ export default function Home() {
         });
         const data = await response.json();
 
-        console.log(`[Home] Received ${activeTab}:`, data.total, 'flows');
+        console.log('[Home] Received movements:', data.movements?.length || 0);
 
         if (!isCancelled) {
-          setFlows(data.flows || []);
+          setMovements(data.movements || []);
           setLastUpdated(new Date());
           setIsLoading(false);
         }
       } catch (error) {
-        console.error('Error fetching flows:', error);
+        console.error('[Home] Error fetching movements:', error);
         if (!isCancelled) {
-          setFlows([]);
+          setMovements([]);
           setIsLoading(false);
-        }
-      } finally {
-        if (!isCancelled) {
-          setIsRefreshing(false);
         }
       }
     };
 
     // Initial fetch
-    fetchFlows();
+    fetchMovements();
 
     // Set up auto-refresh every 30 seconds
-    interval = setInterval(fetchFlows, 30000);
+    interval = setInterval(fetchMovements, 30000);
 
     return () => {
       isCancelled = true;
       clearInterval(interval);
     };
-  }, [activeTab, selectedChains, setIsRefreshing, setLastUpdated]);
+  }, []);
+
+  // Client-side filtering
+  const filteredMovements = movements.filter(m => {
+    if (filter === 'all') return true;
+    if (filter === 'exchanges') return m.tags.includes('exchange');
+    if (filter === 'funds') return m.tags.includes('fund');
+    if (filter === 'protocols') return m.tags.includes('protocol');
+    if (filter === 'high_conviction') return m.confidence === 'high' && m.amountUsd > 10_000_000;
+    return true;
+  });
+
+  // Convert Movement[] to Flow[] for FlowList compatibility
+  const flows: Flow[] = filteredMovements.map(m => ({
+    id: m.id,
+    type: m.movementType === 'swap' ? 'whale-movement' : 'whale-movement',
+    chain: m.chain,
+    timestamp: m.ts,
+    amount: m.amountUsd / 1000, // FlowList expects token amount, we'll fix display
+    amountUsd: m.amountUsd,
+    token: {
+      symbol: m.assetSymbol || 'UNKNOWN',
+      address: m.assetAddress || '',
+      name: m.assetSymbol || 'Unknown',
+    },
+    from: {
+      address: m.fromAddress || '',
+      label: m.fromLabel || 'Unknown Wallet',
+    },
+    to: {
+      address: m.toAddress || '',
+      label: m.toLabel || 'Unknown Wallet',
+    },
+    txHash: m.txHash || '',
+    metadata: {
+      category: m.tags[0] || 'Unknown',
+    },
+  }));
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <Header />
-      <TabNavigation />
-      <TabDescription tab={activeTab} />
-      <ChainFilter />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <FlowList key={activeTab} flows={flows} isLoading={isLoading} />
-      </main>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="mb-6">
+          <h2 className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+            Filter by category
+          </h2>
+          <FilterPills active={filter} onSelect={setFilter} />
+        </div>
+
+        {lastUpdated && (
+          <p className="text-xs text-zinc-500 mb-4">
+            Last updated: {lastUpdated.toLocaleTimeString()}
+          </p>
+        )}
+
+        <main>
+          <FlowList flows={flows} isLoading={isLoading} />
+        </main>
+      </div>
     </div>
   );
 }
