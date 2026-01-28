@@ -3,37 +3,94 @@ import { formatUsd, truncateAddress, getFlowTypeEmoji } from './formatting';
 import { getChainConfig, getNansenTxUrl } from './chains';
 
 /**
+ * Determine the action verb based on the movement
+ */
+function getActionVerb(flow: Flow): string {
+  const fromLabel = flow.from.label?.toLowerCase() || '';
+  const toLabel = flow.to.label?.toLowerCase() || '';
+
+  // Deposit (to exchange)
+  if (toLabel.includes('binance') || toLabel.includes('coinbase') ||
+      toLabel.includes('kraken') || toLabel.includes('exchange') ||
+      toLabel.includes('deposit')) {
+    return 'deposited';
+  }
+
+  // Withdrawal (from exchange)
+  if (fromLabel.includes('binance') || fromLabel.includes('coinbase') ||
+      fromLabel.includes('kraken') || fromLabel.includes('exchange')) {
+    return 'withdrew';
+  }
+
+  // Swap/Trade
+  if (flow.type === 'defi-activity' || toLabel.includes('swap') || toLabel.includes('dex')) {
+    return 'swapped';
+  }
+
+  // Bridge
+  if (toLabel.includes('bridge') || fromLabel.includes('bridge')) {
+    return 'bridged';
+  }
+
+  // Default
+  return 'moved';
+}
+
+/**
+ * Clean up entity name for tweet
+ */
+function cleanEntityName(label: string | undefined, address: string): string {
+  if (!label) return truncateAddress(address);
+
+  // Remove emojis and truncated addresses in brackets
+  return label
+    .replace(/🏦|🤖|💼|🐋/g, '') // Remove emojis
+    .replace(/\[0x[a-fA-F0-9]{6}\]/g, '') // Remove [0xabc123]
+    .trim();
+}
+
+/**
+ * Format token amount (add commas, handle decimals)
+ */
+function formatTokenAmount(amount: number): string {
+  if (amount >= 1_000_000_000) {
+    return (amount / 1_000_000_000).toFixed(1) + 'B';
+  }
+  if (amount >= 1_000_000) {
+    return (amount / 1_000_000).toFixed(1) + 'M';
+  }
+  if (amount >= 1_000) {
+    return (amount / 1_000).toFixed(1) + 'K';
+  }
+  return amount.toFixed(2);
+}
+
+/**
  * Generate tweet text for a flow
  */
 export function generateTweetText(flow: Flow): string {
-  const emoji = getFlowTypeEmoji(flow.type);
   const chain = getChainConfig(flow.chain).name;
-  const amount = formatUsd(flow.amountUsd, 1);
+  const usdAmount = formatUsd(flow.amountUsd, 1);
   const token = flow.token.symbol;
 
-  const fromLabel = flow.from.label || truncateAddress(flow.from.address);
-  const toLabel = flow.to.label || truncateAddress(flow.to.address);
+  const fromName = cleanEntityName(flow.from.label, flow.from.address);
+  const toName = cleanEntityName(flow.to.label, flow.to.address);
+  const action = getActionVerb(flow);
 
-  let typeDescription = '';
-  switch (flow.type) {
-    case 'whale-movement':
-      typeDescription = 'Whale Alert';
-      break;
-    case 'defi-activity':
-      typeDescription = 'DeFi Move';
-      break;
-    case 'token-launch':
-      typeDescription = 'New Token';
-      break;
-    case 'smart-money':
-      typeDescription = 'Smart Money';
-      break;
+  // If we have a reasonable token amount, show it (not the fake USD/1000 amount)
+  // Otherwise, just show USD value with "worth of [TOKEN]"
+  let amountText = '';
+  if (flow.amount > 100 && flow.amountUsd / flow.amount > 0.01 && flow.amountUsd / flow.amount < 100000) {
+    // Looks like a real token amount (reasonable price per token)
+    const tokenAmount = formatTokenAmount(flow.amount);
+    amountText = `${tokenAmount} $${token} (${usdAmount})`;
+  } else {
+    // Just show USD value
+    amountText = `${usdAmount} worth of $${token}`;
   }
 
-  return `${emoji} ${typeDescription}: ${amount} worth of ${token} on ${chain}
-
-From: ${fromLabel}
-To: ${toLabel}
+  // Whale Alert style: "🚨 Whale Alert: [Entity] just [action] [amount] to [destination]"
+  return `🚨 Whale Alert: ${fromName} just ${action} ${amountText} to ${toName} on ${chain}
 
 Track on Nansen →`;
 }
