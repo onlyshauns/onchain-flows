@@ -19,6 +19,7 @@ export default function Home() {
 
     const fetchFlows = async () => {
       try {
+        setIsLoading(true);
         setIsRefreshing(true);
 
         // Map tab to API endpoint
