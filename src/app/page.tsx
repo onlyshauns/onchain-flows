@@ -13,6 +13,12 @@ export default function Home() {
   const [flows, setFlows] = useState<Flow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Clear flows immediately when tab or chains change
+  useEffect(() => {
+    setFlows([]);
+    setIsLoading(true);
+  }, [activeTab, selectedChains]);
+
   // Fetch flows based on active tab and selected chains
   useEffect(() => {
     let isCancelled = false;

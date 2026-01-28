@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getNansenClient } from '@/lib/nansen/client';
-import { getEtherscanClient } from '@/lib/etherscan/client';
-import { FUNDS, getLabelForAddress } from '@/lib/etherscan/addresses';
 import { Chain, Flow } from '@/types/flows';
 
 /**
@@ -15,10 +13,7 @@ function isSameEntityTransfer(fromLabel: string, toLabel: string): boolean {
   const from = fromLabel.toLowerCase();
   const to = toLabel.toLowerCase();
 
-  // Exact match (same label on both sides)
-  if (from === to) {
-    return true;
-  }
+  if (from === to) return true;
 
   const entities = [
     'binance', 'coinbase', 'kraken', 'bybit', 'okx', 'huobi', 'kucoin',
@@ -44,60 +39,63 @@ export async function GET(request: NextRequest) {
   let allFlows: Flow[] = [];
   let dataSource = 'None';
 
-  // Try Nansen first - track specific fund addresses
   try {
     const client = getNansenClient();
 
     for (const chainParam of chains) {
       const chain = chainParam.toLowerCase() as Chain;
+      const popularTokens = client.getPopularTokens(chain);
 
-      // Track each fund address individually
-      for (const fund of FUNDS) {
+      if (popularTokens.length === 0) continue;
+
+      for (const tokenAddress of popularTokens.slice(0, 3)) {
         try {
-          console.log(`[API] Tracking ${fund.label} on ${chain}...`);
-
-          const response = await client.getAddressTransactions(chain, fund.address, {
-            minVolumeUsd: 50000, // $50k+ transactions
-            limit: 20,
+          // Use label filtering to get only Fund transfers
+          const response = await client.getTokenTransfers(chain, tokenAddress, {
+            minValueUsd: 100000, // $100k+ for institutional funds
+            limit: 30,
+            labelType: 'smart_money',
+            includeSmartMoneyLabels: ['Fund'],
           });
 
           if (response.data && response.data.length > 0) {
-            dataSource = 'Nansen';
+            dataSource = 'Nansen (Fund Filter)';
 
-            response.data.forEach((tx: any) => {
-              const fromLabel = tx.from_address === fund.address.toLowerCase()
-                ? fund.label
-                : (tx.from_address_label || 'Unknown Wallet');
-              const toLabel = tx.to_address === fund.address.toLowerCase()
-                ? fund.label
-                : (tx.to_address_label || 'Unknown Wallet');
+            response.data.forEach((transfer) => {
+              const fromLabel = transfer.from_address_label || 'Unknown Wallet';
+              const toLabel = transfer.to_address_label || 'Unknown Wallet';
+
+              // Only include if at least one side is a fund
+              const hasFund =
+                fromLabel.toLowerCase().includes('fund') ||
+                toLabel.toLowerCase().includes('fund');
+
+              if (!hasFund) return;
 
               // Filter out same-entity transfers
-              if (isSameEntityTransfer(fromLabel, toLabel)) {
-                return;
-              }
+              if (isSameEntityTransfer(fromLabel, toLabel)) return;
 
               allFlows.push({
-                id: tx.transaction_hash,
+                id: transfer.transaction_hash,
                 type: 'whale-movement',
                 chain,
-                timestamp: new Date(tx.block_timestamp).getTime(),
-                amount: parseFloat(tx.transfer_amount || '0'),
-                amountUsd: tx.volume_usd || 0,
+                timestamp: new Date(transfer.block_timestamp).getTime(),
+                amount: parseFloat(transfer.transfer_amount),
+                amountUsd: transfer.transfer_value_usd,
                 token: {
-                  symbol: tx.token_symbol || 'ETH',
-                  address: tx.token_address || '',
-                  name: tx.token_name || '',
+                  symbol: transfer.token_symbol,
+                  address: transfer.token_address,
+                  name: transfer.token_name,
                 },
                 from: {
-                  address: tx.from_address,
+                  address: transfer.from_address,
                   label: fromLabel,
                 },
                 to: {
-                  address: tx.to_address,
+                  address: transfer.to_address,
                   label: toLabel,
                 },
-                txHash: tx.transaction_hash,
+                txHash: transfer.transaction_hash,
                 metadata: {
                   category: 'Institutional Flow',
                 },
@@ -105,7 +103,7 @@ export async function GET(request: NextRequest) {
             });
           }
         } catch (error) {
-          console.error(`[API] Nansen error for ${fund.label} on ${chain}:`, error);
+          console.error(`[API] Nansen error for ${chain}:`, error);
         }
       }
     }
@@ -113,85 +111,11 @@ export async function GET(request: NextRequest) {
     console.error('[API] Nansen client error:', error);
   }
 
-  // Fallback to Etherscan if no Nansen data
-  if (allFlows.length === 0 && chains.includes('ethereum')) {
-    console.log('[API] Falling back to Etherscan for fund movements');
-
-    try {
-      const etherscanClient = getEtherscanClient();
-
-      // Track known fund addresses
-      const transactions = await etherscanClient.getMultipleAddressTransactions(
-        FUNDS,
-        20
-      );
-
-      dataSource = 'Etherscan (Recent 24h)';
-
-      transactions.forEach(({ tx, label }) => {
-        const value = parseFloat(tx.value) / Math.pow(10, parseInt(tx.tokenDecimal));
-        const timestamp = parseInt(tx.timeStamp) * 1000;
-
-        if (value > 10000) {
-          const fromLabel = getLabelForAddress(tx.from) || label;
-          const toLabel = getLabelForAddress(tx.to) || 'Unknown Wallet';
-
-          // Filter out same-entity transfers
-          if (isSameEntityTransfer(fromLabel, toLabel)) {
-            return;
-          }
-
-          allFlows.push({
-            id: tx.hash,
-            type: 'whale-movement',
-            chain: 'ethereum',
-            timestamp,
-            amount: value,
-            amountUsd: value * 1,
-            token: {
-              symbol: tx.tokenSymbol,
-              address: tx.contractAddress,
-              name: tx.tokenName,
-            },
-            from: {
-              address: tx.from,
-              label: fromLabel,
-            },
-            to: {
-              address: tx.to,
-              label: toLabel,
-            },
-            txHash: tx.hash,
-            metadata: {
-              category: 'Institutional Flow',
-            },
-          });
-        }
-      });
-    } catch (error) {
-      console.error('[API] Etherscan fallback error:', error);
-    }
-  }
-
-  // Sort by priority: fund involvement > USD value > timestamp
+  // Sort by USD value and timestamp
   allFlows.sort((a, b) => {
-    // Prioritize flows involving funds
-    const aHasFund = FUNDS.some(f =>
-      a.from.label === f.label || a.to.label === f.label
-    );
-    const bHasFund = FUNDS.some(f =>
-      b.from.label === f.label || b.to.label === f.label
-    );
-
-    if (aHasFund && !bHasFund) return -1;
-    if (!aHasFund && bHasFund) return 1;
-
-    // Then by USD value
-    if (Math.abs(a.amountUsd - b.amountUsd) > 50000) {
+    if (Math.abs(a.amountUsd - b.amountUsd) > 100000) {
       return b.amountUsd - a.amountUsd;
     }
-
-    // Then by timestamp
     return b.timestamp - a.timestamp;
   });
 

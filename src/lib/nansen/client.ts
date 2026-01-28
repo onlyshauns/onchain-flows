@@ -121,33 +121,43 @@ export class NansenClient {
       limit?: number;
       dateFrom?: string;
       dateTo?: string;
+      labelType?: 'smart_money' | 'all';
+      includeSmartMoneyLabels?: string[];
     } = {}
   ): Promise<NansenTransfersResponse> {
     const nansenChain = CHAIN_MAP[chain];
     const now = new Date();
-    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000); // Use 24h instead of 1h
+    const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-    // Format dates as ISO 8601
     const fromDate = options.dateFrom || twentyFourHoursAgo.toISOString();
     const toDate = options.dateTo || now.toISOString();
+
+    const filters: any = {
+      transfer_value_usd: { min: options.minValueUsd || 100000 },
+    };
+
+    // Add label filtering if specified
+    if (options.includeSmartMoneyLabels && options.includeSmartMoneyLabels.length > 0) {
+      filters.include_smart_money_labels = options.includeSmartMoneyLabels;
+    }
 
     console.log('[Nansen] Token Transfers Request:', {
       chain: nansenChain,
       token: tokenAddress,
       dateRange: `${fromDate} to ${toDate}`,
       minUsd: options.minValueUsd || 100000,
+      labelType: options.labelType,
+      labels: options.includeSmartMoneyLabels,
     });
 
-    return this.post<NansenTransfersResponse>(`${NANSEN_API_V1}/tgm/transfers`, {
+    const body: any = {
       chain: nansenChain,
       token_address: tokenAddress,
       date: {
         from: fromDate,
         to: toDate,
       },
-      filters: {
-        transfer_value_usd: { min: options.minValueUsd || 100000 },
-      },
+      filters,
       pagination: {
         page: 1,
         per_page: options.limit || 100,
@@ -158,7 +168,14 @@ export class NansenClient {
           direction: 'DESC',
         },
       ],
-    });
+    };
+
+    // Add label_type if specified
+    if (options.labelType) {
+      body.label_type = options.labelType;
+    }
+
+    return this.post<NansenTransfersResponse>(`${NANSEN_API_V1}/tgm/transfers`, body);
   }
 
   /**
