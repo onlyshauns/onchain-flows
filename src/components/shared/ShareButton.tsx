@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Twitter, Copy, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
+import { XIcon } from './XIcon';
 import { Flow } from '@/types/flows';
 import { getTwitterShareUrl, copyTweetToClipboard } from '@/lib/utils/twitter';
 
@@ -12,16 +13,14 @@ interface ShareButtonProps {
 
 export function ShareButton({ flow, variant = 'primary' }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://onchainflows.com';
-  const flowUrl = `${appUrl}/flows/${flow.id}`;
 
   const handleTwitterShare = () => {
-    const url = getTwitterShareUrl(flow, flowUrl);
+    const url = getTwitterShareUrl(flow);
     window.open(url, '_blank', 'noopener,noreferrer,width=550,height=420');
   };
 
   const handleCopy = async () => {
-    const success = await copyTweetToClipboard(flow, flowUrl);
+    const success = await copyTweetToClipboard(flow);
     if (success) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -44,9 +43,9 @@ export function ShareButton({ flow, variant = 'primary' }: ShareButtonProps) {
     <div className="flex gap-2">
       <button
         onClick={handleTwitterShare}
-        className="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors text-sm"
+        className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-zinc-800 text-white rounded-lg font-medium transition-colors text-sm"
       >
-        <Twitter className="w-4 h-4" />
+        <XIcon className="w-4 h-4" />
         Share
       </button>
       <button

@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
       if (popularTokens.length === 0) continue;
 
-      for (const tokenAddress of popularTokens) {
+      for (const tokenAddress of popularTokens.slice(0, 2)) {
         try {
           // Use Nansen's proper label filtering for Smart Money
           console.log(`[API] Fetching Smart Money for ${chain}, token: ${tokenAddress}`);

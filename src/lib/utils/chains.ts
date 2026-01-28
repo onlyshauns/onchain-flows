@@ -98,3 +98,21 @@ export const getChainColor = (chain: Chain): string => {
 export const getChainGradient = (chain: Chain): string => {
   return getChainConfig(chain).gradient;
 };
+
+/**
+ * Get Nansen transaction URL for a given chain and tx hash
+ */
+export const getNansenTxUrl = (chain: Chain, txHash: string): string => {
+  // Map our chain names to Nansen's chain slugs
+  const nansenChainMap: Record<Chain, string> = {
+    ethereum: 'ethereum',
+    solana: 'solana',
+    base: 'base',
+    arbitrum: 'arbitrum',
+    optimism: 'optimism',
+    polygon: 'polygon',
+  };
+
+  const chainSlug = nansenChainMap[chain] || chain;
+  return `https://app.nansen.ai/tx/${chainSlug}/${txHash}`;
+};

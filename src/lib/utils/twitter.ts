@@ -1,6 +1,6 @@
 import { Flow } from '@/types/flows';
 import { formatUsd, truncateAddress, getFlowTypeEmoji } from './formatting';
-import { getChainConfig } from './chains';
+import { getChainConfig, getNansenTxUrl } from './chains';
 
 /**
  * Generate tweet text for a flow
@@ -35,24 +35,26 @@ export function generateTweetText(flow: Flow): string {
 From: ${fromLabel}
 To: ${toLabel}
 
-Track live onchain flows →`;
+Track on Nansen →`;
 }
 
 /**
  * Generate Twitter share URL
  */
-export function getTwitterShareUrl(flow: Flow, flowUrl: string): string {
+export function getTwitterShareUrl(flow: Flow): string {
   const text = generateTweetText(flow);
-  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(flowUrl)}`;
+  const nansenUrl = getNansenTxUrl(flow.chain, flow.txHash);
+  const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(nansenUrl)}`;
   return url;
 }
 
 /**
  * Copy tweet text to clipboard
  */
-export async function copyTweetToClipboard(flow: Flow, flowUrl: string): Promise<boolean> {
+export async function copyTweetToClipboard(flow: Flow): Promise<boolean> {
   try {
-    const text = `${generateTweetText(flow)} ${flowUrl}`;
+    const nansenUrl = getNansenTxUrl(flow.chain, flow.txHash);
+    const text = `${generateTweetText(flow)} ${nansenUrl}`;
     await navigator.clipboard.writeText(text);
     return true;
   } catch (error) {
