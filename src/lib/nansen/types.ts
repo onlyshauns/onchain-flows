@@ -6,9 +6,9 @@ export interface NansenTransfer {
   transaction_hash: string;
   block_timestamp: string;
   from_address: string;
-  from_address_name?: string;
+  from_address_label?: string; // FIXED: Nansen uses 'label' not 'name'
   to_address: string;
-  to_address_name?: string;
+  to_address_label?: string; // FIXED: Nansen uses 'label' not 'name'
   token_address: string;
   token_symbol: string;
   token_name?: string;
@@ -16,6 +16,7 @@ export interface NansenTransfer {
   transfer_value_usd: number;
   exchange_type?: 'DEX' | 'CEX' | 'Direct';
   source_type?: string;
+  transaction_type?: string;
 }
 
 export interface NansenTransfersResponse {

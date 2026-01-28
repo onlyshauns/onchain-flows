@@ -64,8 +64,8 @@ export async function GET(request: NextRequest) {
           if (response.data && response.data.length > 0) {
             dataSource = 'Nansen';
             response.data.forEach((transfer) => {
-              const fromLabel = transfer.from_address_name || 'Unknown Wallet';
-              const toLabel = transfer.to_address_name || 'Unknown Wallet';
+              const fromLabel = transfer.from_address_label || 'Unknown Wallet';
+              const toLabel = transfer.to_address_label || 'Unknown Wallet';
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {

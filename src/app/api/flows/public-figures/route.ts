@@ -68,10 +68,10 @@ export async function GET(request: NextRequest) {
             response.data.forEach((tx: any) => {
               const fromLabel = tx.from_address === figure.address.toLowerCase()
                 ? figure.label
-                : (tx.from_address_name || 'Unknown Wallet');
+                : (tx.from_address_label || 'Unknown Wallet');
               const toLabel = tx.to_address === figure.address.toLowerCase()
                 ? figure.label
-                : (tx.to_address_name || 'Unknown Wallet');
+                : (tx.to_address_label || 'Unknown Wallet');
 
               // Filter out same-entity transfers
               if (isSameEntityTransfer(fromLabel, toLabel)) {
