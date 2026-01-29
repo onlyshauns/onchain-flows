@@ -7,16 +7,16 @@ import { IntelligenceSummary } from '@/components/intelligence/IntelligenceSumma
 import { Flow, Chain } from '@/types/flows';
 import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
 
-type TabType = 'intelligence' | 'all' | 'deposits' | 'withdrawals' | 'public-figures' | 'top-holders';
+type TabType = 'intelligence' | 'all' | 'deposits' | 'withdrawals' | 'funds' | 'market-makers' | 'token-spotlight' | 'hot-tokens';
 
 export default function Home() {
   const [flows, setFlows] = useState<Flow[]>([]);
-  const [topHolderFlows, setTopHolderFlows] = useState<Flow[]>([]);
+  const [specialTabFlows, setSpecialTabFlows] = useState<Flow[]>([]); // For token-spotlight, hot-tokens
   const [intelligence, setIntelligence] = useState<FlowIntelligenceSummary | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('intelligence');
   const [chainFilter, setChainFilter] = useState<Chain[]>(['ethereum', 'solana', 'base']);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingTopHolders, setIsLoadingTopHolders] = useState(false);
+  const [isLoadingSpecial, setIsLoadingSpecial] = useState(false); // For special tabs
   const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -129,19 +129,21 @@ export default function Home() {
     };
   }, [chainFilter]); // Re-fetch when chain filter changes
 
-  // Fetch top holder movements when top-holders tab is active
+  // Fetch special tab data (token-spotlight, hot-tokens) when active
   useEffect(() => {
-    if (activeTab !== 'top-holders') return;
+    if (activeTab !== 'token-spotlight' && activeTab !== 'hot-tokens') return;
 
     let isCancelled = false;
 
-    const fetchTopHolders = async () => {
+    const fetchSpecialTab = async () => {
       try {
-        console.log('[Home] Fetching top holder movements...');
-        setIsLoadingTopHolders(true);
+        console.log(`[Home] Fetching ${activeTab} data...`);
+        setIsLoadingSpecial(true);
 
         const chainsParam = chainFilter.join(',');
-        const response = await fetch(`/api/top-holders?chains=${chainsParam}`, {
+        const endpoint = activeTab === 'token-spotlight' ? '/api/token-spotlight' : '/api/hot-tokens';
+
+        const response = await fetch(`${endpoint}?chains=${chainsParam}`, {
           cache: 'no-store',
           headers: {
             'Cache-Control': 'no-cache',
@@ -150,18 +152,18 @@ export default function Home() {
         });
 
         if (!response.ok) {
-          throw new Error(`Top holders API error: ${response.status}`);
+          throw new Error(`${activeTab} API error: ${response.status}`);
         }
 
         const data = await response.json();
 
-        console.log('[Home] Received top holder movements:', data.movements?.length || 0);
+        console.log(`[Home] Received ${activeTab} movements:`, data.movements?.length || 0);
 
         if (!isCancelled) {
           // Convert movements to flows
           const flows: Flow[] = data.movements.map((m: any) => ({
             id: m.id,
-            type: 'whale-movement',
+            type: m.movementType === 'swap' ? 'smart-money' : 'whale-movement',
             chain: m.chain,
             timestamp: m.ts,
             amount: m.tokenAmount || 0,
@@ -181,26 +183,26 @@ export default function Home() {
             },
             txHash: m.txHash || '',
             metadata: {
-              category: 'top_holder',
+              category: m.tags[0],
               tags: m.tags,
-              confidence: 90,
-              anomalyScore: 75,
+              confidence: 85,
+              anomalyScore: 70,
             },
           }));
 
-          setTopHolderFlows(flows);
-          setIsLoadingTopHolders(false);
+          setSpecialTabFlows(flows);
+          setIsLoadingSpecial(false);
         }
       } catch (error) {
-        console.error('[Home] Error fetching top holders:', error);
+        console.error(`[Home] Error fetching ${activeTab}:`, error);
         if (!isCancelled) {
-          setTopHolderFlows([]);
-          setIsLoadingTopHolders(false);
+          setSpecialTabFlows([]);
+          setIsLoadingSpecial(false);
         }
       }
     };
 
-    fetchTopHolders();
+    fetchSpecialTab();
 
     return () => {
       isCancelled = true;
@@ -229,15 +231,18 @@ export default function Home() {
       return tags.includes('exchange_withdrawal') && f.amountUsd >= 10_000_000;
     }
 
-    if (activeTab === 'public-figures') {
-      // Public figures: movements involving notable crypto figures
-      return tags.includes('public_figure');
+    if (activeTab === 'funds') {
+      // Fund activity: VC/hedge fund movements
+      return tags.includes('fund');
     }
 
-    if (activeTab === 'top-holders') {
-      // Top holders: movements from top 100 holders (will be populated separately)
-      return tags.includes('top_holder');
+    if (activeTab === 'market-makers') {
+      // Market maker activity
+      return tags.includes('market_maker');
     }
+
+    // token-spotlight and hot-tokens use separate data source
+    // (handled via specialTabFlows state)
 
     return true;
   });
@@ -245,14 +250,18 @@ export default function Home() {
   // Debug logging for frontend filtering
   console.log('[Home] Active tab:', activeTab);
   console.log('[Home] Total flows:', flows.length);
-  console.log('[Home] Top holder flows:', topHolderFlows.length);
+  console.log('[Home] Special tab flows:', specialTabFlows.length);
   console.log('[Home] Filtered flows:', filteredFlows.length);
   if (flows.length > 0) {
     console.log('[Home] Sample flow tags:', flows[0].metadata?.tags);
   }
-  if (activeTab === 'public-figures') {
-    const publicFigureFlows = flows.filter(f => f.metadata?.tags?.includes('public_figure'));
-    console.log('[Home] Public figure flows found:', publicFigureFlows.length);
+  if (activeTab === 'funds') {
+    const fundFlows = flows.filter(f => f.metadata?.tags?.includes('fund'));
+    console.log('[Home] Fund flows found:', fundFlows.length);
+  }
+  if (activeTab === 'market-makers') {
+    const mmFlows = flows.filter(f => f.metadata?.tags?.includes('market_maker'));
+    console.log('[Home] Market maker flows found:', mmFlows.length);
   }
   if (filteredFlows.length === 0 && flows.length > 0 && (activeTab === 'deposits' || activeTab === 'withdrawals')) {
     console.warn('[Home] No flows match this tab! Check exchange_deposit/exchange_withdrawal tags');
@@ -349,24 +358,44 @@ export default function Home() {
                 📤 Large Withdrawals
               </button>
               <button
-                onClick={() => setActiveTab('public-figures')}
+                onClick={() => setActiveTab('funds')}
                 className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
-                  activeTab === 'public-figures'
+                  activeTab === 'funds'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
-                👤 Public Figures
+                🏢 Fund Activity
               </button>
               <button
-                onClick={() => setActiveTab('top-holders')}
+                onClick={() => setActiveTab('market-makers')}
                 className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
-                  activeTab === 'top-holders'
+                  activeTab === 'market-makers'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
-                🏆 Top Holders
+                🤝 Market Makers
+              </button>
+              <button
+                onClick={() => setActiveTab('token-spotlight')}
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                  activeTab === 'token-spotlight'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
+                }`}
+              >
+                🎯 Token Spotlight
+              </button>
+              <button
+                onClick={() => setActiveTab('hot-tokens')}
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                  activeTab === 'hot-tokens'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
+                }`}
+              >
+                🔥 Hot Tokens
               </button>
             </div>
           </div>
@@ -404,8 +433,8 @@ export default function Home() {
         {activeTab !== 'intelligence' && (
           <main>
             <FlowList
-              flows={activeTab === 'top-holders' ? topHolderFlows : filteredFlows}
-              isLoading={activeTab === 'top-holders' ? isLoadingTopHolders : isLoading}
+              flows={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? specialTabFlows : filteredFlows}
+              isLoading={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? isLoadingSpecial : isLoading}
             />
           </main>
         )}

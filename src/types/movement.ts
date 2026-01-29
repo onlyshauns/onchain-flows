@@ -25,7 +25,10 @@ export type MovementTag =
   | 'defi'             // DeFi activity
   | 'smart_money'      // Nansen smart money label
   | 'public_figure'    // Notable individuals & influencers
-  | 'top_holder';      // Top 100 holders of specific tokens
+  | 'top_holder'       // Top 100 holders of specific tokens
+  | 'spotlight'        // Token spotlight feature
+  | 'hot_token'        // High volume token
+  | 'high_volume';     // High activity
 
 export type Confidence = 'high' | 'med' | 'low';
 
