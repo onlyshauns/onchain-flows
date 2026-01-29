@@ -31,9 +31,9 @@ const CATEGORY_FILTERS: FilterOption[] = [
     description: 'Lending, borrowing & liquidity moves (Aave, Morpho, Compound) - Track DeFi flows'
   },
   {
-    id: 'stablecoins',
-    label: 'Stablecoin Flows',
-    description: 'USDC, USDT, DAI movements - Track liquidity shifts'
+    id: 'public_figures',
+    label: 'Public Figures',
+    description: 'Notable individuals, influencers & public wallets - Track crypto VIPs'
   },
   {
     id: 'whale_movements',

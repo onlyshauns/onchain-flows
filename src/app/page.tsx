@@ -82,7 +82,7 @@ export default function Home() {
     if (categoryFilter === 'exchanges') return m.tags.includes('exchange');
     if (categoryFilter === 'smart_money') return m.tags.includes('smart_money');
     if (categoryFilter === 'defi') return m.tags.includes('defi') || m.tags.includes('protocol');
-    if (categoryFilter === 'stablecoins') return m.tags.includes('stablecoin');
+    if (categoryFilter === 'public_figures') return m.tags.includes('public_figure');
     if (categoryFilter === 'whale_movements') return m.tier === 3 || m.tags.includes('whale');
     if (categoryFilter === 'mega_whales') return m.tags.includes('mega_whale');
     return true;

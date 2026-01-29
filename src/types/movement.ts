@@ -21,7 +21,8 @@ export type MovementTag =
   | 'mega_whale'    // Extra large holder ($50M+)
   | 'stablecoin'    // Stablecoin transfer
   | 'defi'          // DeFi activity
-  | 'smart_money';  // Nansen smart money label
+  | 'smart_money'   // Nansen smart money label
+  | 'public_figure'; // Notable individuals & influencers
 
 export type Confidence = 'high' | 'med' | 'low';
 

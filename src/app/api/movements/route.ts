@@ -18,7 +18,7 @@ const cache = new MovementCache();
 const SUPPORTED_CHAINS: Chain[] = ['ethereum', 'solana', 'base'];
 
 // Multi-tier thresholds for signal quality
-const TIER_1_THRESHOLD = 100_000;   // $100K+ for smart money DEX trades
+const TIER_1_THRESHOLD = 1_000;     // $1K+ for smart money DEX trades
 const TIER_2_THRESHOLD = 500_000;   // $500K+ for labeled entity transfers
 const TIER_3_THRESHOLD: Record<Chain, number> = {
   ethereum: 5_000_000,              // $5M+ whale movements (fallback)

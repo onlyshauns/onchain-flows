@@ -85,6 +85,27 @@ export function enrichTags(movement: Movement): Movement {
     tags.push('smart_money');
   }
 
+  // Public figure tag (notable individuals, ENS names, influencers)
+  if (allLabels.some(l =>
+    // ENS domains (.eth)
+    l.includes('.eth') ||
+    // Known public figures patterns
+    l.includes('vitalik') || l.includes('buterin') ||
+    l.includes('hayden') || l.includes('adams') ||
+    l.includes('sam.ftx') || l.includes('sbf') ||
+    l.includes('su zhu') || l.includes('kyle davies') ||
+    l.includes('arthur') || l.includes('hayes') ||
+    l.includes('cz') || l.includes('changpeng') ||
+    l.includes('justin') || l.includes('sun') ||
+    // Nansen public figure label
+    l.includes('public figure') ||
+    l.includes('influencer') ||
+    l.includes('founder') ||
+    l.includes('ceo')
+  )) {
+    tags.push('public_figure');
+  }
+
   // DeFi tag (if protocol or DEX involved)
   if (movement.movementType === 'swap' ||
       movement.metadata?.dexName ||
