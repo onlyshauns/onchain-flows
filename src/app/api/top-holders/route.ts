@@ -5,18 +5,23 @@ import { NansenFlowsResponse } from '@/lib/nansen/types';
 
 const SUPPORTED_CHAINS: Chain[] = ['ethereum', 'solana', 'base'];
 
-// Top tokens to track for holder movements
+// Top tokens to track for large holder movements
+// Focus on blue-chip assets where $1M+ movements matter
 const TOP_TOKENS: Record<Chain, { address: string; symbol: string }[]> = {
   ethereum: [
     { address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', symbol: 'WETH' },
     { address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', symbol: 'WBTC' },
     { address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', symbol: 'USDC' },
+    { address: '0xdac17f958d2ee523a2206206994597c13d831ec7', symbol: 'USDT' },
+    { address: '0x6b175474e89094c44da98b954eedeac495271d0f', symbol: 'DAI' },
   ],
   solana: [
     { address: 'So11111111111111111111111111111111111111112', symbol: 'SOL' },
+    { address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC' },
   ],
   base: [
     { address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', symbol: 'USDC' },
+    { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH' },
   ],
 };
 
@@ -44,18 +49,17 @@ export async function GET(request: NextRequest) {
 
       return tokens.map(async token => {
         try {
-          console.log(`[Top Holders API] Fetching ${chain}/${token.symbol} top holders`);
+          console.log(`[Top Holders API] Fetching large ${chain}/${token.symbol} movements`);
 
-          // Use getTokenTransfers with top holder labels
+          // Fetch large transfers without label filtering - more reliable
+          // These are likely from top holders anyway given the size
           const response = await client.getTokenTransfers(chain, token.address, {
-            minValueUsd: 100_000, // Min $100K
-            limit: 50,
-            fromIncludeSmartMoneyLabels: ['Top 100 Holders'],
-            toIncludeSmartMoneyLabels: ['Top 100 Holders'],
+            minValueUsd: 1_000_000, // $1M+ movements (whales/top holders)
+            limit: 100,
           });
 
           if (response && response.data && response.data.length > 0) {
-            console.log(`[Top Holders API] Found ${response.data.length} top holder movements for ${token.symbol}`);
+            console.log(`[Top Holders API] Found ${response.data.length} large movements for ${token.symbol}`);
 
             // Convert to Movement format
             const movements = response.data.map(transfer => convertToMovement(transfer, chain, token.symbol));

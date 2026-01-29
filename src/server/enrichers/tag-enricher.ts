@@ -129,24 +129,36 @@ export function enrichTags(movement: Movement): Movement {
   }
 
   // Public figure tag (notable individuals, ENS names, influencers)
-  if (allLabels.some(l =>
-    // ENS domains (.eth)
-    l.includes('.eth') ||
+  // Be MORE INCLUSIVE - tag anything with .eth or known patterns
+  const hasENS = allLabelsOriginal.some(l => l.includes('.eth'));
+  const hasKnownFigure = allLabels.some(l =>
     // Known public figures patterns
     l.includes('vitalik') || l.includes('buterin') ||
     l.includes('hayden') || l.includes('adams') ||
-    l.includes('sam.ftx') || l.includes('sbf') ||
+    l.includes('sam') || l.includes('sbf') ||
     l.includes('su zhu') || l.includes('kyle davies') ||
     l.includes('arthur') || l.includes('hayes') ||
     l.includes('cz') || l.includes('changpeng') ||
     l.includes('justin') || l.includes('sun') ||
-    // Nansen public figure label
+    // Nansen labels
     l.includes('public figure') ||
     l.includes('influencer') ||
     l.includes('founder') ||
-    l.includes('ceo')
-  )) {
+    l.includes('ceo') ||
+    l.includes('celebrity')
+  );
+
+  if (hasENS || hasKnownFigure) {
     tags.push('public_figure');
+    if (movement.amountUsd >= 100_000) {
+      console.log('[TagEnricher] Tagged as public_figure:', {
+        amount: `$${(movement.amountUsd / 1_000_000).toFixed(2)}M`,
+        from: movement.fromLabel,
+        to: movement.toLabel,
+        hasENS,
+        hasKnownFigure,
+      });
+    }
   }
 
   // DeFi tag (if protocol or DEX involved)

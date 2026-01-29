@@ -240,6 +240,28 @@ export async function GET(request: NextRequest) {
       type: m.movementType
     })));
 
+    // Debug: Check for any movements with ENS names or interesting labels
+    const ensMovements = movements.filter(m =>
+      m.fromLabel?.includes('.eth') || m.toLabel?.includes('.eth')
+    );
+    console.log('[API] Movements with .eth ENS names:', ensMovements.length);
+    if (ensMovements.length > 0) {
+      console.log('[API] Sample ENS movement:', {
+        from: ensMovements[0].fromLabel,
+        to: ensMovements[0].toLabel,
+        tags: ensMovements[0].tags,
+      });
+    }
+
+    // Debug: List unique labels to see what Nansen actually returns
+    const allLabels = new Set<string>();
+    movements.forEach(m => {
+      if (m.fromLabel) allLabels.add(m.fromLabel);
+      if (m.toLabel) allLabels.add(m.toLabel);
+    });
+    console.log('[API] Total unique labels found:', allLabels.size);
+    console.log('[API] Sample labels:', Array.from(allLabels).slice(0, 20));
+
     // Deduplication (removes duplicates and same-entity movements)
     movements = deduplicator.deduplicate(movements);
 
