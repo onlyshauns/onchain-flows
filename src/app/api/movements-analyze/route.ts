@@ -20,7 +20,8 @@ export async function GET(request: NextRequest) {
     // Normalize and enrich
     const movements = transfers.map(t => {
       const normalized = normalizeTransfer(t, 'ethereum');
-      return entityEnricher.enrichMovement(normalized);
+      // Add tier (3 = whale movement fallback for this analysis)
+      return entityEnricher.enrichMovement({ ...normalized, tier: 3 });
     });
 
     // Analyze entity pairs

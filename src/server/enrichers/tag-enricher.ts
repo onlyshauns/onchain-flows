@@ -97,5 +97,10 @@ export function enrichTags(movement: Movement): Movement {
     tags.push('whale');
   }
 
+  // Mega whale tag (size-based, $50M+)
+  if (movement.amountUsd > 50_000_000) {
+    tags.push('mega_whale');
+  }
+
   return { ...movement, tags };
 }

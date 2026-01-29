@@ -35,6 +35,7 @@ export interface Movement {
   movementType: MovementType;
   tags: MovementTag[];
   confidence: Confidence;
+  tier: 1 | 2 | 3;               // Signal quality: 1=Smart Money, 2=Labeled, 3=Whale
 
   // Value
   amountUsd: number;             // Always USD value

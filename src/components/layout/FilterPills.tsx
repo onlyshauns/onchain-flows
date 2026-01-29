@@ -36,6 +36,11 @@ const CATEGORY_FILTERS: FilterOption[] = [
     description: 'USDC, USDT, DAI movements - Track liquidity shifts'
   },
   {
+    id: 'whale_movements',
+    label: 'Whale Movements',
+    description: 'Large movements $5M+ ETH, $2M+ SOL/BASE - Pure size-based filtering'
+  },
+  {
     id: 'mega_whales',
     label: 'Mega Whales',
     description: '$50M+ movements only - The biggest players'

@@ -35,10 +35,18 @@ export class NansenClient {
     chains: Chain[];
     minUsd: number;
     since: Date;
+    fromIncludeSmartMoneyLabels?: string[];
+    toIncludeSmartMoneyLabels?: string[];
   }): Promise<NansenTransfer[]> {
     // Parallel fetch for all chains
     const promises = params.chains.map(chain =>
-      this.fetchTransfersForChain(chain, params.minUsd, params.since)
+      this.fetchTransfersForChain(
+        chain,
+        params.minUsd,
+        params.since,
+        params.fromIncludeSmartMoneyLabels,
+        params.toIncludeSmartMoneyLabels
+      )
     );
 
     const results = await Promise.allSettled(promises);
@@ -186,8 +194,20 @@ export class NansenClient {
   private async fetchTransfersForChain(
     chain: Chain,
     minUsd: number,
-    since: Date
+    since: Date,
+    fromIncludeSmartMoneyLabels?: string[],
+    toIncludeSmartMoneyLabels?: string[]
   ): Promise<NansenTransfer[]> {
+    // If smart money labels are requested, we need entity-based querying
+    // Current token-based implementation doesn't support this well
+    // TODO: Implement proper label-based querying using Nansen's profiler API
+    if (fromIncludeSmartMoneyLabels?.length || toIncludeSmartMoneyLabels?.length) {
+      console.log(`[NansenClient] Label filtering requested for ${chain} but not yet implemented`);
+      console.log(`[NansenClient] From labels:`, fromIncludeSmartMoneyLabels);
+      console.log(`[NansenClient] To labels:`, toIncludeSmartMoneyLabels);
+      // For now, fall through to token-based fetching as a partial solution
+    }
+
     const popularTokens = this.getPopularTokens(chain);
 
     if (popularTokens.length === 0) {

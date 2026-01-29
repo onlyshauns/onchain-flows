@@ -9,13 +9,16 @@ const CHAIN_MAP: Record<Chain, string> = {
   base: 'base',
 };
 
+// Movement without tier (tier is added at API level based on fetching strategy)
+type MovementWithoutTier = Omit<Movement, 'tier'>;
+
 /**
  * Normalize a Nansen transfer to our Movement format
  */
 export function normalizeTransfer(
   transfer: NansenTransfer,
   chain: Chain
-): Movement {
+): MovementWithoutTier {
   const id = `${chain}-${transfer.transaction_hash}-0`;
 
   // Infer token from chain if not provided
@@ -66,7 +69,7 @@ function inferTokenSymbol(chain: Chain): string {
 /**
  * Normalize a Nansen DEX trade to our Movement format
  */
-export function normalizeDEXTrade(trade: NansenDEXTrade): Movement {
+export function normalizeDEXTrade(trade: NansenDEXTrade): MovementWithoutTier {
   const chain = trade.chain.toLowerCase() as Chain;
   const id = `${chain}-${trade.transaction_hash}-0`;
 

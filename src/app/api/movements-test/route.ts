@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     logs.push('Step 4: Enrich entity');
     const entityEnricher = new EntityEnricher();
-    const enriched = entityEnricher.enrichMovement(normalized);
+    const enriched = entityEnricher.enrichMovement({ ...normalized, tier: 3 });
     logs.push(`  From entity: ${enriched.fromEntityId || 'none'}`);
     logs.push(`  To entity: ${enriched.toEntityId || 'none'}`);
 

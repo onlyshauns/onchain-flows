@@ -17,12 +17,22 @@ const cache = new MovementCache();
 // Fixed chains (no user selection)
 const SUPPORTED_CHAINS: Chain[] = ['ethereum', 'solana', 'base'];
 
-// Thresholds per chain ($USD minimum)
-const THRESHOLDS: Record<Chain, number> = {
-  ethereum: 5_000_000,      // $5M minimum
-  solana: 1_000_000,        // $1M minimum
-  base: 1_000_000,          // $1M minimum
+// Multi-tier thresholds for signal quality
+const TIER_1_THRESHOLD = 100_000;   // $100K+ for smart money DEX trades
+const TIER_2_THRESHOLD = 500_000;   // $500K+ for labeled entity transfers
+const TIER_3_THRESHOLD: Record<Chain, number> = {
+  ethereum: 5_000_000,              // $5M+ whale movements (fallback)
+  solana: 2_000_000,                // $2M+ whale movements
+  base: 2_000_000,                  // $2M+ whale movements
 };
+
+// Nansen Smart Money labels to track (Tier 1)
+const SMART_MONEY_LABELS = [
+  'Smart DEX Trader',
+  'Smart LP',
+  'Smart NFT Trader',
+  'Smart Money',
+];
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -53,32 +63,81 @@ export async function GET(request: NextRequest) {
   try {
     const client = getNansenClient();
 
-    console.log('[API] Starting data fetch...');
+    console.log('[API] Starting multi-tier data fetch...');
 
-    // Fetch from all supported chains
-    const fetchPromises = SUPPORTED_CHAINS.map(async chain => {
+    // TIER 1: Smart Money DEX Trades ($100K+) - HIGHEST PRIORITY
+    console.log('[API] Tier 1: Fetching smart money DEX trades...');
+    const tier1Promise = client.getDEXTrades({
+      chains: SUPPORTED_CHAINS,
+      minUsd: TIER_1_THRESHOLD,
+      since,
+    }).then(trades => {
+      console.log(`[API] Tier 1: ${trades.length} smart money DEX trades`);
+      return trades.map(t => ({ ...normalizeDEXTrade(t), tier: 1 as const }));
+    }).catch(err => {
+      console.error('[API] Tier 1 error:', err);
+      return [];
+    });
+
+    // TIER 2: Labeled Entity Transfers ($500K+) - MEDIUM PRIORITY
+    console.log('[API] Tier 2: Fetching labeled entity transfers...');
+    const tier2Promises = SUPPORTED_CHAINS.map(async chain => {
       try {
-        console.log(`[API] Fetching ${chain}...`);
-        const chainTransfers = await client.getTransfers({
+        // Fetch transfers involving smart money labels
+        const transfers = await client.getTransfers({
           chains: [chain],
-          minUsd: THRESHOLDS[chain],
+          minUsd: TIER_2_THRESHOLD,
           since,
+          fromIncludeSmartMoneyLabels: SMART_MONEY_LABELS,
         });
-        console.log(`[API] ${chain}: ${chainTransfers.length} transfers`);
+        console.log(`[API] Tier 2 ${chain}: ${transfers.length} labeled transfers (from)`);
 
-        // Normalize with correct chain
-        return chainTransfers.map(t => normalizeTransfer(t, chain));
+        const transfers2 = await client.getTransfers({
+          chains: [chain],
+          minUsd: TIER_2_THRESHOLD,
+          since,
+          toIncludeSmartMoneyLabels: SMART_MONEY_LABELS,
+        });
+        console.log(`[API] Tier 2 ${chain}: ${transfers2.length} labeled transfers (to)`);
+
+        const allTransfers = [...transfers, ...transfers2];
+        return allTransfers.map(t => ({ ...normalizeTransfer(t, chain), tier: 2 as const }));
       } catch (err) {
-        console.error(`[API] ${chain} fetch error:`, err);
+        console.error(`[API] Tier 2 ${chain} error:`, err);
         return [];
       }
     });
 
-    // Wait for all fetches
-    const chainResults = await Promise.all(fetchPromises);
+    // TIER 3: Large Whale Movements ($5M+) - FALLBACK
+    console.log('[API] Tier 3: Fetching whale movements...');
+    const tier3Promises = SUPPORTED_CHAINS.map(async chain => {
+      try {
+        const transfers = await client.getTransfers({
+          chains: [chain],
+          minUsd: TIER_3_THRESHOLD[chain],
+          since,
+        });
+        console.log(`[API] Tier 3 ${chain}: ${transfers.length} whale movements`);
+        return transfers.map(t => ({ ...normalizeTransfer(t, chain), tier: 3 as const }));
+      } catch (err) {
+        console.error(`[API] Tier 3 ${chain} error:`, err);
+        return [];
+      }
+    });
+
+    // Wait for all tiers
+    const [tier1Results, tier2Results, tier3Results] = await Promise.all([
+      tier1Promise,
+      Promise.all(tier2Promises),
+      Promise.all(tier3Promises),
+    ]);
 
     // Flatten all transfers
-    const normalizedTransfers: Movement[] = chainResults.flat();
+    const normalizedTransfers: Movement[] = [
+      ...tier1Results,
+      ...tier2Results.flat(),
+      ...tier3Results.flat(),
+    ];
 
     console.log(`[API] Total normalized: ${normalizedTransfers.length} transfers`);
 
@@ -94,9 +153,15 @@ export async function GET(request: NextRequest) {
     movements = deduplicator.deduplicate(movements);
 
     console.log(`[API] After deduplication: ${movements.length} movements`);
+    console.log(`[API] Tier breakdown: T1=${movements.filter(m => m.tier === 1).length}, T2=${movements.filter(m => m.tier === 2).length}, T3=${movements.filter(m => m.tier === 3).length}`);
 
-    // Sort by timestamp (most recent first)
-    movements.sort((a, b) => b.ts - a.ts);
+    // Sort by tier first (1=highest priority), then by timestamp (most recent)
+    movements.sort((a, b) => {
+      if (a.tier !== b.tier) {
+        return a.tier - b.tier; // Lower tier number = higher priority
+      }
+      return b.ts - a.ts; // Within same tier, most recent first
+    });
 
     // Cache result
     cache.set(cacheKey, movements);
