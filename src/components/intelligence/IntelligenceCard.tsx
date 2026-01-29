@@ -26,7 +26,7 @@ export function IntelligenceCard({
     <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-2xl">{emoji}</span>
-        <h3 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+        <h3 className="text-sm font-medium text-white">
           {label}
         </h3>
       </div>

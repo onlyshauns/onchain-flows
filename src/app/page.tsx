@@ -126,19 +126,44 @@ export default function Home() {
     };
   }, [chainFilter]); // Re-fetch when chain filter changes
 
-  // Client-side filtering
+  // Client-side filtering with overlapping categories
   const filteredFlows = flows.filter(f => {
     // Chain filter
     if (!chainFilter.includes(f.chain)) return false;
 
-    // Category filter
+    // Category filter - now using tags and amounts for overlapping categories
+    const tags = f.metadata?.tags || [];
+
     if (categoryFilter === 'all') return true;
-    if (categoryFilter === 'exchanges') return f.metadata?.category === 'exchange';
-    if (categoryFilter === 'smart_money') return f.type === 'smart-money' || f.metadata?.category === 'smart_money';
-    if (categoryFilter === 'defi') return f.type === 'defi-activity' || f.metadata?.category === 'defi' || f.metadata?.category === 'protocol';
-    if (categoryFilter === 'public_figures') return f.metadata?.category === 'public_figure';
-    if (categoryFilter === 'whale_movements') return f.type === 'whale-movement';
-    if (categoryFilter === 'mega_whales') return f.type === 'whale-movement' && f.metadata?.category === 'mega_whale';
+
+    // Amount-based filters (overlapping) - ANY flow above threshold
+    if (categoryFilter === 'mega_whales') {
+      return f.amountUsd >= 50_000_000;  // Any flow over $50M
+    }
+
+    if (categoryFilter === 'whale_movements') {
+      return f.amountUsd >= 10_000_000;  // Any flow over $10M
+    }
+
+    // Tag-based filters (overlapping)
+    if (categoryFilter === 'smart_money') {
+      return f.type === 'smart-money' || tags.includes('smart_money');
+    }
+
+    if (categoryFilter === 'public_figures') {
+      return tags.includes('public_figure');
+    }
+
+    if (categoryFilter === 'defi') {
+      return f.type === 'defi-activity' ||
+             tags.includes('defi') ||
+             tags.includes('protocol');
+    }
+
+    if (categoryFilter === 'exchanges') {
+      return tags.includes('exchange');
+    }
+
     return true;
   });
 

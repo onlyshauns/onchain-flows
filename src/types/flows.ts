@@ -28,6 +28,7 @@ export interface Flow {
   txHash: string;
   metadata?: {
     category?: string; // e.g., "Exchange", "DeFi", "Bridge"
+    tags?: string[]; // All tags from movement (not just first)
     confidence?: number; // 0-100
     anomalyScore?: number; // 0-100 for unusual activity
     score?: number; // 0-100 interestingness score

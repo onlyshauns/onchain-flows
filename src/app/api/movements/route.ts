@@ -84,6 +84,29 @@ export async function GET(request: NextRequest) {
       return [];
     });
 
+    // PUBLIC FIGURES: Special fetch at $1K+ threshold
+    console.log('[API] Fetching public figure movements at $1K+...');
+    const publicFigurePromises = SUPPORTED_CHAINS.map(async chain => {
+      try {
+        const publicFigures = await client.getTransfers({
+          chains: [chain],
+          minUsd: 1_000,  // $1K threshold for public figures
+          since,
+          // Public figure and influencer labels
+          fromIncludeSmartMoneyLabels: ['Public Figure', 'Influencer'],
+          toIncludeSmartMoneyLabels: ['Public Figure', 'Influencer'],
+        });
+        console.log(`[API] Public figures ${chain}: ${publicFigures.length} movements`);
+        return publicFigures.map(t => ({
+          ...normalizeTransfer(t, chain),
+          tier: 1 as const  // Treat as Tier 1 for high priority scoring
+        }));
+      } catch (err) {
+        console.error(`[API] Public figures ${chain} error:`, err);
+        return [];
+      }
+    });
+
     // TIER 2: Labeled Entity Transfers ($500K-$5M) - MEDIUM PRIORITY
     // Fetch transfers involving smart money, public figures, funds
     console.log('[API] Tier 2: Fetching labeled entity transfers...');
@@ -127,9 +150,10 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Wait for all tiers
-    const [tier1Results, tier2Results, tier3Results] = await Promise.all([
+    // Wait for all tiers including public figures
+    const [tier1Results, publicFigureResults, tier2Results, tier3Results] = await Promise.all([
       tier1Promise,
+      Promise.all(publicFigurePromises),
       Promise.all(tier2Promises),
       Promise.all(tier3Promises),
     ]);
@@ -137,6 +161,7 @@ export async function GET(request: NextRequest) {
     // Flatten all transfers
     const normalizedTransfers: Movement[] = [
       ...tier1Results,
+      ...publicFigureResults.flat(),
       ...tier2Results.flat(),
       ...tier3Results.flat(),
     ];

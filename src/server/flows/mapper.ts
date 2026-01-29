@@ -37,6 +37,7 @@ export function movementToFlow(movement: Movement): Flow {
     txHash: movement.txHash || '',
     metadata: {
       category: movement.tags[0],
+      tags: movement.tags, // Store ALL tags for flexible filtering
       confidence: confidenceToNumber(movement.confidence),
       anomalyScore: calculateAnomalyScore(movement),
     },

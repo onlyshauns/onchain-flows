@@ -23,7 +23,7 @@ const CATEGORY_FILTERS: FilterOption[] = [
   {
     id: 'whale_movements',
     label: 'Whale Movements',
-    description: 'Large token transfers ($500K+) - Track big money moving on-chain'
+    description: '$10M+ movements of ANY type - Shows all large on-chain activity across DeFi, transfers, and trades'
   },
   {
     id: 'defi',
@@ -43,7 +43,7 @@ const CATEGORY_FILTERS: FilterOption[] = [
   {
     id: 'mega_whales',
     label: 'Mega Whales',
-    description: '$50M+ movements only - The absolute biggest on-chain transfers'
+    description: '$50M+ movements of ANY type - DeFi, transfers, or trades. The absolute biggest on-chain moves regardless of activity'
   },
 ];
 
