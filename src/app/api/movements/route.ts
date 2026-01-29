@@ -80,41 +80,19 @@ export async function GET(request: NextRequest) {
     });
 
     // TIER 2: Labeled Entity Transfers ($500K+) - MEDIUM PRIORITY
-    console.log('[API] Tier 2: Fetching labeled entity transfers...');
-    const tier2Promises = SUPPORTED_CHAINS.map(async chain => {
-      try {
-        // Fetch transfers involving smart money labels
-        const transfers = await client.getTransfers({
-          chains: [chain],
-          minUsd: TIER_2_THRESHOLD,
-          since,
-          fromIncludeSmartMoneyLabels: SMART_MONEY_LABELS,
-        });
-        console.log(`[API] Tier 2 ${chain}: ${transfers.length} labeled transfers (from)`);
+    // TODO: Implement proper label-based filtering via Nansen profiler API
+    // For now, using lower threshold on tier 3 to capture more movements
+    console.log('[API] Tier 2: Skipped (label filtering not yet implemented)');
 
-        const transfers2 = await client.getTransfers({
-          chains: [chain],
-          minUsd: TIER_2_THRESHOLD,
-          since,
-          toIncludeSmartMoneyLabels: SMART_MONEY_LABELS,
-        });
-        console.log(`[API] Tier 2 ${chain}: ${transfers2.length} labeled transfers (to)`);
-
-        const allTransfers = [...transfers, ...transfers2];
-        return allTransfers.map(t => ({ ...normalizeTransfer(t, chain), tier: 2 as const }));
-      } catch (err) {
-        console.error(`[API] Tier 2 ${chain} error:`, err);
-        return [];
-      }
-    });
-
-    // TIER 3: Large Whale Movements ($5M+) - FALLBACK
+    // TIER 3: Large Whale Movements ($2M+) - FALLBACK with LOWER threshold
     console.log('[API] Tier 3: Fetching whale movements...');
     const tier3Promises = SUPPORTED_CHAINS.map(async chain => {
       try {
+        // Lower thresholds to capture more data until Tier 2 is implemented
+        const threshold = chain === 'ethereum' ? 2_000_000 : 1_000_000;
         const transfers = await client.getTransfers({
           chains: [chain],
-          minUsd: TIER_3_THRESHOLD[chain],
+          minUsd: threshold,
           since,
         });
         console.log(`[API] Tier 3 ${chain}: ${transfers.length} whale movements`);
@@ -126,16 +104,14 @@ export async function GET(request: NextRequest) {
     });
 
     // Wait for all tiers
-    const [tier1Results, tier2Results, tier3Results] = await Promise.all([
+    const [tier1Results, tier3Results] = await Promise.all([
       tier1Promise,
-      Promise.all(tier2Promises),
       Promise.all(tier3Promises),
     ]);
 
     // Flatten all transfers
     const normalizedTransfers: Movement[] = [
       ...tier1Results,
-      ...tier2Results.flat(),
       ...tier3Results.flat(),
     ];
 
