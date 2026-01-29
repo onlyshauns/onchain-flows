@@ -23,10 +23,10 @@ export function IntelligenceCard({
   const formattedFlow = formatCurrency(Math.abs(netFlowUsd));
 
   return (
-    <div className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 hover:border-zinc-300 dark:hover:border-zinc-700 transition-colors">
+    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] hover:border-[var(--accent)] rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:nansen-glow">
       <div className="flex items-center gap-2 mb-2">
         <span className="text-2xl">{emoji}</span>
-        <h3 className="text-sm font-medium text-white">
+        <h3 className="text-sm font-medium text-[var(--foreground)]">
           {label}
         </h3>
       </div>
@@ -38,11 +38,11 @@ export function IntelligenceCard({
           </span>
         </div>
 
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+        <p className="text-xs text-[var(--foreground)] opacity-60">
           {walletCount.toLocaleString()} wallets
         </p>
 
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">
+        <p className="text-xs text-[var(--foreground)] opacity-50">
           Net flow (1h)
         </p>
       </div>

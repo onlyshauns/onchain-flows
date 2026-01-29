@@ -20,11 +20,11 @@ export function IntelligenceSummary({
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 animate-pulse"
+              className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-4 animate-pulse"
             >
-              <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded mb-2"></div>
-              <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded mb-1"></div>
-              <div className="h-4 bg-zinc-200 dark:bg-zinc-800 rounded w-20"></div>
+              <div className="h-6 bg-zinc-800 dark:bg-zinc-800 rounded mb-2"></div>
+              <div className="h-8 bg-zinc-800 dark:bg-zinc-800 rounded mb-1"></div>
+              <div className="h-4 bg-zinc-800 dark:bg-zinc-800 rounded w-20"></div>
             </div>
           ))}
         </div>
