@@ -51,18 +51,49 @@ export async function GET(request: NextRequest) {
         try {
           console.log(`[Top Holders API] Fetching large ${chain}/${token.symbol} movements`);
 
-          // Fetch large transfers without label filtering - more reliable
-          // These are likely from top holders anyway given the size
+          // Fetch very large transfers ($5M+) - serious whale activity only
           const response = await client.getTokenTransfers(chain, token.address, {
-            minValueUsd: 1_000_000, // $1M+ movements (whales/top holders)
-            limit: 100,
+            minValueUsd: 5_000_000, // $5M+ movements only
+            limit: 50,
           });
 
           if (response && response.data && response.data.length > 0) {
             console.log(`[Top Holders API] Found ${response.data.length} large movements for ${token.symbol}`);
 
+            // Filter for quality: require at least one labeled address AND exclude junk
+            const qualityMovements = response.data.filter(transfer => {
+              const hasLabel = transfer.from_address_label || transfer.to_address_label;
+
+              // Skip if no labels (we want to know WHO)
+              if (!hasLabel) return false;
+
+              // Skip protocol-to-protocol noise
+              const fromIsProtocol = transfer.from_address_label?.includes('🤖');
+              const toIsProtocol = transfer.to_address_label?.includes('🤖');
+
+              if (fromIsProtocol && toIsProtocol) {
+                console.log(`[Top Holders API] Skipping protocol-to-protocol: ${transfer.from_address_label} → ${transfer.to_address_label}`);
+                return false;
+              }
+
+              // Skip exchange-to-exchange internal transfers
+              const fromIsExchange = transfer.from_address_label?.includes('🏦') ||
+                                     transfer.from_address_label?.toLowerCase().includes('exchange');
+              const toIsExchange = transfer.to_address_label?.includes('🏦') ||
+                                   transfer.to_address_label?.toLowerCase().includes('exchange');
+
+              if (fromIsExchange && toIsExchange) {
+                console.log(`[Top Holders API] Skipping exchange-to-exchange: ${transfer.from_address_label} → ${transfer.to_address_label}`);
+                return false;
+              }
+
+              return true;
+            });
+
+            console.log(`[Top Holders API] After filtering: ${qualityMovements.length} quality movements for ${token.symbol}`);
+
             // Convert to Movement format
-            const movements = response.data.map(transfer => convertToMovement(transfer, chain, token.symbol));
+            const movements = qualityMovements.map(transfer => convertToMovement(transfer, chain, token.symbol));
 
             return movements;
           }
@@ -121,7 +152,7 @@ function convertToMovement(transfer: any, chain: Chain, tokenSymbol: string): Mo
     txHash: transfer.transaction_hash,
     explorerUrl: transfer.transaction_hash ? getExplorerUrl(chain, transfer.transaction_hash) : undefined,
     metadata: {
-      protocol: transfer.contract_name,
+      protocol: transfer.source_type,
     },
     dataSource: 'nansen',
   };
