@@ -30,6 +30,7 @@ export interface Flow {
     category?: string; // e.g., "Exchange", "DeFi", "Bridge"
     confidence?: number; // 0-100
     anomalyScore?: number; // 0-100 for unusual activity
+    score?: number; // 0-100 interestingness score
     // Token launch specific fields
     liquidity?: number; // Total liquidity in USD
     volume24h?: number; // 24h trading volume in USD

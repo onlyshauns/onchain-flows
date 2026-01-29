@@ -4,25 +4,28 @@ import { useEffect, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { FilterPills } from '@/components/layout/FilterPills';
 import { FlowList } from '@/components/flows/FlowList';
-import { Movement } from '@/types/movement';
-import { Flow } from '@/types/flows';
+import { IntelligenceSummary } from '@/components/intelligence/IntelligenceSummary';
+import { Flow, Chain } from '@/types/flows';
+import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
 
 export default function Home() {
-  const [movements, setMovements] = useState<Movement[]>([]);
+  const [flows, setFlows] = useState<Flow[]>([]);
+  const [intelligence, setIntelligence] = useState<FlowIntelligenceSummary | null>(null);
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [chainFilter, setChainFilter] = useState<Movement['chain'][]>(['ethereum', 'solana', 'base']);
+  const [chainFilter, setChainFilter] = useState<Chain[]>(['ethereum', 'solana', 'base']);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch movements from unified API
+  // Fetch flows from unified API
   useEffect(() => {
     let isCancelled = false;
     let interval: NodeJS.Timeout;
 
-    const fetchMovements = async () => {
+    const fetchFlows = async () => {
       try {
-        console.log('[Home] Fetching movements...');
+        console.log('[Home] Fetching flows...');
         setError(null);
 
         const response = await fetch('/api/movements', {
@@ -39,20 +42,20 @@ export default function Home() {
 
         const data = await response.json();
 
-        console.log('[Home] Received movements:', data.movements?.length || 0);
-        console.log('[Home] Sample movement:', data.movements?.[0]);
+        console.log('[Home] Received flows:', data.flows?.length || 0);
+        console.log('[Home] Sample flow:', data.flows?.[0]);
 
         if (!isCancelled) {
-          setMovements(data.movements || []);
+          setFlows(data.flows || []);
           setLastUpdated(new Date());
           setIsLoading(false);
           setError(null);
         }
       } catch (error) {
-        console.error('[Home] Error fetching movements:', error);
-        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch movements';
+        console.error('[Home] Error fetching flows:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Failed to fetch flows';
         if (!isCancelled) {
-          setMovements([]);
+          setFlows([]);
           setIsLoading(false);
           setError(errorMessage);
         }
@@ -60,11 +63,11 @@ export default function Home() {
     };
 
     // Initial fetch
-    fetchMovements();
+    fetchFlows();
 
-    // Set up auto-refresh every 5 minutes (data is cached for 1 hour)
-    // More frequent refreshes aren't needed since movements persist longer
-    interval = setInterval(fetchMovements, 5 * 60 * 1000);
+    // Set up auto-refresh every 2 minutes (aligned with CDN cache)
+    // More frequent refreshes provide fresher data
+    interval = setInterval(fetchFlows, 2 * 60 * 1000);
 
     return () => {
       isCancelled = true;
@@ -72,23 +75,74 @@ export default function Home() {
     };
   }, []);
 
+  // Fetch flow intelligence
+  useEffect(() => {
+    let isCancelled = false;
+    let interval: NodeJS.Timeout;
+
+    const fetchIntelligence = async () => {
+      try {
+        console.log('[Home] Fetching intelligence...');
+
+        const chainsParam = chainFilter.join(',');
+        const response = await fetch(`/api/intelligence?chains=${chainsParam}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Intelligence API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log('[Home] Received intelligence:', data);
+
+        if (!isCancelled) {
+          setIntelligence(data);
+          setIsLoadingIntelligence(false);
+        }
+      } catch (error) {
+        console.error('[Home] Error fetching intelligence:', error);
+        if (!isCancelled) {
+          setIntelligence(null);
+          setIsLoadingIntelligence(false);
+        }
+      }
+    };
+
+    // Initial fetch
+    fetchIntelligence();
+
+    // Refresh every 10 minutes (intelligence data updates slower)
+    interval = setInterval(fetchIntelligence, 10 * 60 * 1000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [chainFilter]); // Re-fetch when chain filter changes
+
   // Client-side filtering
-  const filteredMovements = movements.filter(m => {
+  const filteredFlows = flows.filter(f => {
     // Chain filter
-    if (!chainFilter.includes(m.chain)) return false;
+    if (!chainFilter.includes(f.chain)) return false;
 
     // Category filter
     if (categoryFilter === 'all') return true;
-    if (categoryFilter === 'exchanges') return m.tags.includes('exchange');
-    if (categoryFilter === 'smart_money') return m.tags.includes('smart_money');
-    if (categoryFilter === 'defi') return m.tags.includes('defi') || m.tags.includes('protocol');
-    if (categoryFilter === 'public_figures') return m.tags.includes('public_figure');
-    if (categoryFilter === 'whale_movements') return m.tier === 3 || m.tags.includes('whale');
-    if (categoryFilter === 'mega_whales') return m.tags.includes('mega_whale');
+    if (categoryFilter === 'exchanges') return f.metadata?.category === 'exchange';
+    if (categoryFilter === 'smart_money') return f.type === 'smart-money' || f.metadata?.category === 'smart_money';
+    if (categoryFilter === 'defi') return f.type === 'defi-activity' || f.metadata?.category === 'defi' || f.metadata?.category === 'protocol';
+    if (categoryFilter === 'public_figures') return f.metadata?.category === 'public_figure';
+    if (categoryFilter === 'whale_movements') return f.type === 'whale-movement';
+    if (categoryFilter === 'mega_whales') return f.type === 'whale-movement' && f.metadata?.category === 'mega_whale';
     return true;
   });
 
-  const toggleChain = (chain: Movement['chain']) => {
+  const toggleChain = (chain: Chain) => {
     setChainFilter(prev => {
       if (prev.includes(chain)) {
         // If deselecting, keep at least one chain selected
@@ -100,33 +154,6 @@ export default function Home() {
       }
     });
   };
-
-  // Convert Movement[] to Flow[] for FlowList compatibility
-  const flows: Flow[] = filteredMovements.map(m => ({
-    id: m.id,
-    type: m.movementType === 'swap' ? 'whale-movement' : 'whale-movement',
-    chain: m.chain,
-    timestamp: m.ts,
-    amount: m.tokenAmount || 0, // Use real token amount from Nansen
-    amountUsd: m.amountUsd,
-    token: {
-      symbol: m.assetSymbol || 'UNKNOWN',
-      address: m.assetAddress || '',
-      name: m.assetSymbol || 'Unknown',
-    },
-    from: {
-      address: m.fromAddress || '',
-      label: m.fromLabel || 'Unknown Wallet',
-    },
-    to: {
-      address: m.toAddress || '',
-      label: m.toLabel || 'Unknown Wallet',
-    },
-    txHash: m.txHash || '',
-    metadata: {
-      category: m.tags[0] || 'Unknown',
-    },
-  }));
 
   return (
     <div className="min-h-screen bg-[var(--background)]">
@@ -142,28 +169,33 @@ export default function Home() {
           />
         </div>
 
+        <IntelligenceSummary
+          intelligence={intelligence}
+          isLoading={isLoadingIntelligence}
+        />
+
         {lastUpdated && (
           <p className="text-xs text-zinc-500 mb-4">
-            Last updated: {lastUpdated.toLocaleTimeString()} • {movements.length} movements • {filteredMovements.length} after filter
+            Last updated: {lastUpdated.toLocaleTimeString()} • {flows.length} flows • {filteredFlows.length} after filter
           </p>
         )}
 
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
-            <p className="text-red-900 dark:text-red-100 font-medium">Error loading movements</p>
+            <p className="text-red-900 dark:text-red-100 font-medium">Error loading flows</p>
             <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
           </div>
         )}
 
-        {!isLoading && !error && movements.length > 0 && filteredMovements.length === 0 && (
+        {!isLoading && !error && flows.length > 0 && filteredFlows.length === 0 && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
-            <p className="text-yellow-900 dark:text-yellow-100 font-medium">No movements match this filter</p>
+            <p className="text-yellow-900 dark:text-yellow-100 font-medium">No flows match this filter</p>
             <p className="text-yellow-700 dark:text-yellow-300 text-sm">Try selecting "All" or a different category</p>
           </div>
         )}
 
         <main>
-          <FlowList flows={flows} isLoading={isLoading} />
+          <FlowList flows={filteredFlows} isLoading={isLoading} />
         </main>
       </div>
     </div>

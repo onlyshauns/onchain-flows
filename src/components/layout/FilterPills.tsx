@@ -1,7 +1,7 @@
 'use client';
 
 import clsx from 'clsx';
-import { Chain } from '@/types/movement';
+import { Chain } from '@/types/flows';
 
 interface FilterOption {
   id: string;
@@ -12,38 +12,38 @@ interface FilterOption {
 const CATEGORY_FILTERS: FilterOption[] = [
   {
     id: 'all',
-    label: 'All Movements',
-    description: 'All whale movements across chains ($5M+ ETH, $1M+ others)'
-  },
-  {
-    id: 'exchanges',
-    label: 'Exchange Flows',
-    description: 'CEX deposits & withdrawals (Binance, Coinbase, Kraken, etc.) - Track institutional moves'
+    label: 'All Flows',
+    description: 'All interesting on-chain flows - Smart money trades, whale movements, and DeFi activity'
   },
   {
     id: 'smart_money',
     label: 'Smart Money',
-    description: 'Elite traders & Nansen Smart Money wallets - Follow the profits'
-  },
-  {
-    id: 'defi',
-    label: 'DeFi Activity',
-    description: 'Lending, borrowing & liquidity moves (Aave, Morpho, Compound) - Track DeFi flows'
-  },
-  {
-    id: 'public_figures',
-    label: 'Public Figures',
-    description: 'Notable individuals, influencers & public wallets - Track crypto VIPs'
+    description: 'Smart money DEX trades ($100K+) - Elite traders with proven track records'
   },
   {
     id: 'whale_movements',
     label: 'Whale Movements',
-    description: 'Large movements $5M+ ETH, $2M+ SOL/BASE - Pure size-based filtering'
+    description: 'Large token transfers ($500K+) - Track big money moving on-chain'
+  },
+  {
+    id: 'defi',
+    label: 'DeFi Activity',
+    description: 'DeFi protocol interactions - Swaps, lending, borrowing & liquidity moves'
+  },
+  {
+    id: 'exchanges',
+    label: 'Exchange Flows',
+    description: 'CEX deposits & withdrawals - Track institutional and large trader moves'
+  },
+  {
+    id: 'public_figures',
+    label: 'Public Figures',
+    description: 'Notable individuals & influencers - Track crypto VIPs and thought leaders'
   },
   {
     id: 'mega_whales',
     label: 'Mega Whales',
-    description: '$50M+ movements only - The biggest players'
+    description: '$50M+ movements only - The absolute biggest on-chain transfers'
   },
 ];
 

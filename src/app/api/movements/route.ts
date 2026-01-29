@@ -8,6 +8,8 @@ import { MovementCache } from '@/server/cache';
 import { calculateConfidence } from '@/server/utils';
 import { Movement, Chain } from '@/types/movement';
 import { NansenTransfer } from '@/lib/nansen/types';
+import { movementsToFlows } from '@/server/flows/mapper';
+import { rankFlows } from '@/server/flows/scorer';
 
 // Singletons (instantiated once per server instance)
 const entityEnricher = new EntityEnricher();
@@ -51,8 +53,11 @@ export async function GET(request: NextRequest) {
   const cached = cache.get(cacheKey);
   if (cached) {
     console.log('[API] Cache hit:', cacheKey);
+    // Convert cached movements to flows and rank them
+    const flows = movementsToFlows(cached);
+    const rankedFlows = rankFlows(flows);
     return NextResponse.json({
-      movements: cached,
+      flows: rankedFlows,
       cached: true,
       source: 'cache',
     });
@@ -79,10 +84,29 @@ export async function GET(request: NextRequest) {
       return [];
     });
 
-    // TIER 2: Labeled Entity Transfers ($500K+) - MEDIUM PRIORITY
-    // TODO: Implement proper label-based filtering via Nansen profiler API
-    // For now, using lower threshold on tier 3 to capture more movements
-    console.log('[API] Tier 2: Skipped (label filtering not yet implemented)');
+    // TIER 2: Labeled Entity Transfers ($500K-$5M) - MEDIUM PRIORITY
+    // Fetch transfers involving smart money, public figures, funds
+    console.log('[API] Tier 2: Fetching labeled entity transfers...');
+    const tier2Promises = SUPPORTED_CHAINS.map(async chain => {
+      try {
+        const labeledTransfers = await client.getTransfers({
+          chains: [chain],
+          minUsd: TIER_2_THRESHOLD,
+          since,
+          // Include transfers from/to labeled entities
+          fromIncludeSmartMoneyLabels: SMART_MONEY_LABELS,
+          toIncludeSmartMoneyLabels: SMART_MONEY_LABELS,
+        });
+        console.log(`[API] Tier 2 ${chain}: ${labeledTransfers.length} labeled transfers`);
+        // Filter to avoid overlap with Tier 3 (only $500K-$5M range)
+        return labeledTransfers
+          .filter(t => t.transfer_value_usd < 5_000_000)
+          .map(t => ({ ...normalizeTransfer(t, chain), tier: 2 as const }));
+      } catch (err) {
+        console.error(`[API] Tier 2 ${chain} error:`, err);
+        return [];
+      }
+    });
 
     // TIER 3: Large Whale Movements ($2M+) - FALLBACK with LOWER threshold
     console.log('[API] Tier 3: Fetching whale movements...');
@@ -104,14 +128,16 @@ export async function GET(request: NextRequest) {
     });
 
     // Wait for all tiers
-    const [tier1Results, tier3Results] = await Promise.all([
+    const [tier1Results, tier2Results, tier3Results] = await Promise.all([
       tier1Promise,
+      Promise.all(tier2Promises),
       Promise.all(tier3Promises),
     ]);
 
     // Flatten all transfers
     const normalizedTransfers: Movement[] = [
       ...tier1Results,
+      ...tier2Results.flat(),
       ...tier3Results.flat(),
     ];
 
@@ -139,28 +165,36 @@ export async function GET(request: NextRequest) {
       return b.ts - a.ts; // Within same tier, most recent first
     });
 
-    // Cache result
+    // Convert movements to flows with proper type classification
+    const flows = movementsToFlows(movements);
+
+    // Rank flows by interestingness score (adds score to metadata and sorts)
+    const rankedFlows = rankFlows(flows);
+
+    // Cache result (cache movements, not flows, to preserve enrichment data)
     cache.set(cacheKey, movements);
 
-    console.log(`[API] Returning ${movements.length} movements`);
+    console.log(`[API] Returning ${rankedFlows.length} flows`);
+    console.log(`[API] Flow types: Smart Money=${rankedFlows.filter(f => f.type === 'smart-money').length}, Whale=${rankedFlows.filter(f => f.type === 'whale-movement').length}, DeFi=${rankedFlows.filter(f => f.type === 'defi-activity').length}`);
+    console.log(`[API] Top 3 scores: ${rankedFlows.slice(0, 3).map(f => f.metadata?.score || 0).join(', ')}`);
 
     return NextResponse.json({
-      movements,
+      flows: rankedFlows,
       cached: false,
       source: 'nansen',
       dataHealth: {
         lastFetch: new Date().toISOString(),
         counts: {
-          ethereum: movements.filter(m => m.chain === 'ethereum').length,
-          solana: movements.filter(m => m.chain === 'solana').length,
-          base: movements.filter(m => m.chain === 'base').length,
+          ethereum: rankedFlows.filter(f => f.chain === 'ethereum').length,
+          solana: rankedFlows.filter(f => f.chain === 'solana').length,
+          base: rankedFlows.filter(f => f.chain === 'base').length,
         },
       },
     }, {
       headers: {
-        // Cache for 5 minutes on CDN, allow stale content for 10 minutes
-        // This reduces API load while keeping data reasonably fresh
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        // Cache for 2 minutes on CDN, allow stale content for 5 minutes
+        // Shorter cache for more frequent updates of transactional data
+        'Cache-Control': 'public, s-maxage=120, stale-while-revalidate=300',
       },
     });
 
@@ -172,8 +206,8 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(
       {
-        error: 'Failed to fetch movements',
-        movements: [],
+        error: 'Failed to fetch flows',
+        flows: [],
         source: 'error',
       },
       { status: 500 }

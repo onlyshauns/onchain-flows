@@ -20,16 +20,46 @@ interface FlowCardProps {
 export function FlowCard({ flow }: FlowCardProps) {
   const nansenUrl = getNansenTxUrl(flow.chain, flow.txHash);
   const emoji = getFlowTypeEmoji(flow.type, flow.metadata?.category);
+  const score = flow.metadata?.score || 0;
+
+  // Determine visual priority based on score
+  const isHighPriority = score >= 90;
+  const isMediumPriority = score >= 70 && score < 90;
+
+  const cardClasses = [
+    'bg-[var(--card-bg)] rounded-xl p-6 transition-all duration-300',
+    'hover:shadow-lg hover:nansen-glow',
+    isHighPriority
+      ? 'border-2 border-yellow-500 dark:border-yellow-400 animate-pulse-subtle shadow-yellow-500/20'
+      : isMediumPriority
+      ? 'border-2 border-blue-500 dark:border-blue-400'
+      : 'border border-[var(--card-border)] hover:border-[var(--accent)]',
+  ].join(' ');
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 hover:border-[var(--accent)] hover:shadow-lg hover:nansen-glow transition-all duration-300">
+    <div className={cardClasses}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{emoji}</span>
           <div>
-            <h3 className="font-bold text-[var(--foreground)]">
-              {formatFlowType(flow.type)}
-            </h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-[var(--foreground)]">
+                {formatFlowType(flow.type)}
+              </h3>
+              {score > 0 && (
+                <span
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                    isHighPriority
+                      ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
+                      : isMediumPriority
+                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                      : 'bg-zinc-500/20 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  {score}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-[var(--foreground)] opacity-50">
               {formatTimeAgo(flow.timestamp)}
             </p>
