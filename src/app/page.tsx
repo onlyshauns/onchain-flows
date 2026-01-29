@@ -7,14 +7,16 @@ import { IntelligenceSummary } from '@/components/intelligence/IntelligenceSumma
 import { Flow, Chain } from '@/types/flows';
 import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
 
-type TabType = 'intelligence' | 'all' | 'deposits' | 'withdrawals';
+type TabType = 'intelligence' | 'all' | 'deposits' | 'withdrawals' | 'public-figures' | 'top-holders';
 
 export default function Home() {
   const [flows, setFlows] = useState<Flow[]>([]);
+  const [topHolderFlows, setTopHolderFlows] = useState<Flow[]>([]);
   const [intelligence, setIntelligence] = useState<FlowIntelligenceSummary | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('intelligence');
   const [chainFilter, setChainFilter] = useState<Chain[]>(['ethereum', 'solana', 'base']);
   const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingTopHolders, setIsLoadingTopHolders] = useState(false);
   const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +129,84 @@ export default function Home() {
     };
   }, [chainFilter]); // Re-fetch when chain filter changes
 
+  // Fetch top holder movements when top-holders tab is active
+  useEffect(() => {
+    if (activeTab !== 'top-holders') return;
+
+    let isCancelled = false;
+
+    const fetchTopHolders = async () => {
+      try {
+        console.log('[Home] Fetching top holder movements...');
+        setIsLoadingTopHolders(true);
+
+        const chainsParam = chainFilter.join(',');
+        const response = await fetch(`/api/top-holders?chains=${chainsParam}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Top holders API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log('[Home] Received top holder movements:', data.movements?.length || 0);
+
+        if (!isCancelled) {
+          // Convert movements to flows
+          const flows: Flow[] = data.movements.map((m: any) => ({
+            id: m.id,
+            type: 'whale-movement',
+            chain: m.chain,
+            timestamp: m.ts,
+            amount: m.tokenAmount || 0,
+            amountUsd: m.amountUsd,
+            token: {
+              symbol: m.assetSymbol || 'UNKNOWN',
+              address: m.assetAddress || '',
+              name: m.assetSymbol,
+            },
+            from: {
+              address: m.fromAddress || '',
+              label: m.fromLabel,
+            },
+            to: {
+              address: m.toAddress || '',
+              label: m.toLabel,
+            },
+            txHash: m.txHash || '',
+            metadata: {
+              category: 'top_holder',
+              tags: m.tags,
+              confidence: 90,
+              anomalyScore: 75,
+            },
+          }));
+
+          setTopHolderFlows(flows);
+          setIsLoadingTopHolders(false);
+        }
+      } catch (error) {
+        console.error('[Home] Error fetching top holders:', error);
+        if (!isCancelled) {
+          setTopHolderFlows([]);
+          setIsLoadingTopHolders(false);
+        }
+      }
+    };
+
+    fetchTopHolders();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [activeTab, chainFilter]); // Re-fetch when tab or chain filter changes
+
   // Tab-based filtering
   const filteredFlows = flows.filter(f => {
     // Chain filter (always apply)
@@ -149,15 +229,30 @@ export default function Home() {
       return tags.includes('exchange_withdrawal') && f.amountUsd >= 10_000_000;
     }
 
+    if (activeTab === 'public-figures') {
+      // Public figures: movements involving notable crypto figures
+      return tags.includes('public_figure');
+    }
+
+    if (activeTab === 'top-holders') {
+      // Top holders: movements from top 100 holders (will be populated separately)
+      return tags.includes('top_holder');
+    }
+
     return true;
   });
 
   // Debug logging for frontend filtering
   console.log('[Home] Active tab:', activeTab);
   console.log('[Home] Total flows:', flows.length);
+  console.log('[Home] Top holder flows:', topHolderFlows.length);
   console.log('[Home] Filtered flows:', filteredFlows.length);
   if (flows.length > 0) {
     console.log('[Home] Sample flow tags:', flows[0].metadata?.tags);
+  }
+  if (activeTab === 'public-figures') {
+    const publicFigureFlows = flows.filter(f => f.metadata?.tags?.includes('public_figure'));
+    console.log('[Home] Public figure flows found:', publicFigureFlows.length);
   }
   if (filteredFlows.length === 0 && flows.length > 0 && (activeTab === 'deposits' || activeTab === 'withdrawals')) {
     console.warn('[Home] No flows match this tab! Check exchange_deposit/exchange_withdrawal tags');
@@ -253,6 +348,26 @@ export default function Home() {
               >
                 📤 Large Withdrawals
               </button>
+              <button
+                onClick={() => setActiveTab('public-figures')}
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                  activeTab === 'public-figures'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
+                }`}
+              >
+                👤 Public Figures
+              </button>
+              <button
+                onClick={() => setActiveTab('top-holders')}
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                  activeTab === 'top-holders'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
+                }`}
+              >
+                🏆 Top Holders
+              </button>
             </div>
           </div>
         </div>
@@ -288,7 +403,10 @@ export default function Home() {
         {/* Only show flow list on non-intelligence tabs */}
         {activeTab !== 'intelligence' && (
           <main>
-            <FlowList flows={filteredFlows} isLoading={isLoading} />
+            <FlowList
+              flows={activeTab === 'top-holders' ? topHolderFlows : filteredFlows}
+              isLoading={activeTab === 'top-holders' ? isLoadingTopHolders : isLoading}
+            />
           </main>
         )}
       </div>

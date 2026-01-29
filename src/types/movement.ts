@@ -24,7 +24,8 @@ export type MovementTag =
   | 'stablecoin'       // Stablecoin transfer
   | 'defi'             // DeFi activity
   | 'smart_money'      // Nansen smart money label
-  | 'public_figure';   // Notable individuals & influencers
+  | 'public_figure'    // Notable individuals & influencers
+  | 'top_holder';      // Top 100 holders of specific tokens
 
 export type Confidence = 'high' | 'med' | 'low';
 
