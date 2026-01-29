@@ -12,17 +12,19 @@ export type MovementType =
   | 'other';        // Uncategorized
 
 export type MovementTag =
-  | 'exchange'      // CEX involvement
-  | 'fund'          // VC/hedge fund
-  | 'market_maker'  // Market making entity
-  | 'protocol'      // DeFi protocol
-  | 'bridge'        // Bridge contract
-  | 'whale'         // Large holder ($10M+)
-  | 'mega_whale'    // Extra large holder ($50M+)
-  | 'stablecoin'    // Stablecoin transfer
-  | 'defi'          // DeFi activity
-  | 'smart_money'   // Nansen smart money label
-  | 'public_figure'; // Notable individuals & influencers
+  | 'exchange'          // CEX involvement
+  | 'exchange_deposit'  // Deposit TO exchange
+  | 'exchange_withdrawal' // Withdrawal FROM exchange
+  | 'fund'             // VC/hedge fund
+  | 'market_maker'     // Market making entity
+  | 'protocol'         // DeFi protocol
+  | 'bridge'           // Bridge contract
+  | 'whale'            // Large holder ($10M+)
+  | 'mega_whale'       // Extra large holder ($50M+)
+  | 'stablecoin'       // Stablecoin transfer
+  | 'defi'             // DeFi activity
+  | 'smart_money'      // Nansen smart money label
+  | 'public_figure';   // Notable individuals & influencers
 
 export type Confidence = 'high' | 'med' | 'low';
 

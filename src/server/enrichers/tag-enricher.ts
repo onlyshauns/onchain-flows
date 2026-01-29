@@ -15,18 +15,35 @@ export function enrichTags(movement: Movement): Movement {
   const allLabels = allLabelsOriginal.map(l => l.toLowerCase());
 
   // Exchange tag (🏦 emoji or exchange names)
-  if (allLabelsOriginal.some(l => l.includes('🏦')) ||
-      allLabels.some(l =>
-    l.includes('binance') || l.includes('coinbase') ||
-    l.includes('kraken') || l.includes('bybit') ||
-    l.includes('okx') || l.includes('huobi') ||
-    l.includes('kucoin') || l.includes('bitfinex') ||
-    l.includes('gemini') || l.includes('bitstamp') ||
-    l.includes('gate.io') || l.includes('crypto.com') ||
-    l.includes('mexc') || l.includes('exchange') ||
-    l.includes('ceffu')
-  )) {
+  const isExchangeKeyword = (label: string) => {
+    const l = label.toLowerCase();
+    return l.includes('binance') || l.includes('coinbase') ||
+           l.includes('kraken') || l.includes('bybit') ||
+           l.includes('okx') || l.includes('huobi') ||
+           l.includes('kucoin') || l.includes('bitfinex') ||
+           l.includes('gemini') || l.includes('bitstamp') ||
+           l.includes('gate.io') || l.includes('crypto.com') ||
+           l.includes('mexc') || l.includes('exchange') ||
+           l.includes('ceffu');
+  };
+
+  const toIsExchange = movement.toLabel && (
+    movement.toLabel.includes('🏦') || isExchangeKeyword(movement.toLabel)
+  );
+  const fromIsExchange = movement.fromLabel && (
+    movement.fromLabel.includes('🏦') || isExchangeKeyword(movement.fromLabel)
+  );
+
+  if (toIsExchange || fromIsExchange) {
     tags.push('exchange');
+
+    // Determine direction: deposit (TO exchange) or withdrawal (FROM exchange)
+    if (toIsExchange) {
+      tags.push('exchange_deposit');
+    }
+    if (fromIsExchange) {
+      tags.push('exchange_withdrawal');
+    }
   }
 
   // Fund tag
