@@ -48,13 +48,14 @@ export function FlowCard({ flow }: FlowCardProps) {
               </h3>
               {score > 0 && (
                 <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+                  className={`text-xs font-bold px-2 py-0.5 rounded-full cursor-help ${
                     isHighPriority
                       ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
                       : isMediumPriority
                       ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
                       : 'bg-zinc-500/20 text-zinc-600 dark:text-zinc-400'
                   }`}
+                  title={`Interestingness Score: ${score}/100\n\nBased on:\n• Data quality (smart money trades score higher)\n• Transaction size\n• Entity reputation\n• Recency\n\n90+ = High priority\n70-89 = Medium priority\n<70 = Standard`}
                 >
                   {score}
                 </span>
