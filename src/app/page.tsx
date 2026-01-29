@@ -319,7 +319,7 @@ export default function Home() {
             <div className="flex gap-2 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('intelligence')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'intelligence'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -329,7 +329,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'all'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -339,7 +339,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('deposits')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'deposits'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -349,7 +349,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('withdrawals')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'withdrawals'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -359,7 +359,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('funds')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'funds'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -369,7 +369,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('market-makers')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'market-makers'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -379,7 +379,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('token-spotlight')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'token-spotlight'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
@@ -389,7 +389,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab('hot-tokens')}
-                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
+                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'hot-tokens'
                     ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'

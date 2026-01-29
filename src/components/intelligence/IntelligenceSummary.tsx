@@ -13,9 +13,6 @@ export function IntelligenceSummary({
   if (isLoading) {
     return (
       <div className="mb-6">
-        <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
-          📊 Flow Intelligence
-        </h2>
         <div className="grid grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
             <div
@@ -51,9 +48,6 @@ export function IntelligenceSummary({
   return (
     <div className="mb-6">
       <div className="mb-3">
-        <h2 className="text-sm font-medium text-white mb-1">
-          📊 Flow Intelligence
-        </h2>
         <p className="text-xs text-zinc-400">
           <span className="font-medium">Top Token Flows</span> - Aggregate inflows vs outflows across major tokens on ETH, SOL, and Base by wallet category
         </p>
