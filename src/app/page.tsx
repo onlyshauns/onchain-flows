@@ -131,7 +131,12 @@ export default function Home() {
 
   // Fetch special tab data (token-spotlight, hot-tokens) when active
   useEffect(() => {
-    if (activeTab !== 'token-spotlight' && activeTab !== 'hot-tokens') return;
+    // Reset special tab data when switching away from special tabs
+    if (activeTab !== 'token-spotlight' && activeTab !== 'hot-tokens') {
+      setSpecialTabFlows([]);
+      setIsLoadingSpecial(false);
+      return;
+    }
 
     let isCancelled = false;
 
@@ -409,7 +414,8 @@ export default function Home() {
           />
         )}
 
-        {lastUpdated && activeTab !== 'intelligence' && (
+        {/* Show last updated only when not loading */}
+        {lastUpdated && activeTab !== 'intelligence' && !isLoading && !isLoadingSpecial && (
           <p className="text-xs text-zinc-500 mb-4">
             Last updated: {lastUpdated.toLocaleTimeString()} • {flows.length} flows • {filteredFlows.length} after filter
           </p>
@@ -422,21 +428,20 @@ export default function Home() {
           </div>
         )}
 
-        {!isLoading && !error && flows.length > 0 && filteredFlows.length === 0 && activeTab !== 'intelligence' && (
+        {/* Show warning only when NOT loading */}
+        {!isLoading && !isLoadingSpecial && !error && flows.length > 0 && filteredFlows.length === 0 && activeTab !== 'intelligence' && activeTab !== 'token-spotlight' && activeTab !== 'hot-tokens' && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
             <p className="text-yellow-900 dark:text-yellow-100 font-medium">No flows match this filter</p>
             <p className="text-yellow-700 dark:text-yellow-300 text-sm">Try selecting a different tab or chain</p>
           </div>
         )}
 
-        {/* Only show flow list on non-intelligence tabs */}
+        {/* Show flow list on non-intelligence tabs */}
         {activeTab !== 'intelligence' && (
-          <main>
-            <FlowList
-              flows={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? specialTabFlows : filteredFlows}
-              isLoading={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? isLoadingSpecial : isLoading}
-            />
-          </main>
+          <FlowList
+            flows={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? specialTabFlows : filteredFlows}
+            isLoading={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? isLoadingSpecial : isLoading}
+          />
         )}
       </div>
     </div>
