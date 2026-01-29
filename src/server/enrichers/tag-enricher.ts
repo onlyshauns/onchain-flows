@@ -38,12 +38,16 @@ export function enrichTags(movement: Movement): Movement {
     tags.push('exchange');
 
     // Determine direction: deposit (TO exchange) or withdrawal (FROM exchange)
-    if (toIsExchange) {
+    // BUT exclude exchange-to-exchange transfers (internal movements)
+    if (toIsExchange && !fromIsExchange) {
+      // Deposit: going TO exchange from non-exchange
       tags.push('exchange_deposit');
     }
-    if (fromIsExchange) {
+    if (fromIsExchange && !toIsExchange) {
+      // Withdrawal: coming FROM exchange to non-exchange
       tags.push('exchange_withdrawal');
     }
+    // If both are exchanges, don't add deposit/withdrawal tags (internal exchange transfer)
   }
 
   // Fund tag
