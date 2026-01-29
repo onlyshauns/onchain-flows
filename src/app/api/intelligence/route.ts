@@ -21,8 +21,12 @@ export async function GET(request: NextRequest) {
     const intelligence = await fetchFlowIntelligence(chains);
 
     console.log('[Intelligence API] Successfully fetched intelligence');
-    console.log('[Intelligence API] Whale net flow:', intelligence.aggregated.whale.netFlowUsd);
-    console.log('[Intelligence API] Smart trader net flow:', intelligence.aggregated.smartTrader.netFlowUsd);
+    console.log('[Intelligence API] 1h - Whale net flow:', intelligence.aggregated['1h'].whale.netFlowUsd);
+    console.log('[Intelligence API] 1h - Smart trader net flow:', intelligence.aggregated['1h'].smartTrader.netFlowUsd);
+    console.log('[Intelligence API] 1h - Exchange net flow:', intelligence.aggregated['1h'].exchange.netFlowUsd);
+    console.log('[Intelligence API] 24h - Whale net flow:', intelligence.aggregated['24h'].whale.netFlowUsd);
+    console.log('[Intelligence API] 24h - Smart trader net flow:', intelligence.aggregated['24h'].smartTrader.netFlowUsd);
+    console.log('[Intelligence API] 24h - Exchange net flow:', intelligence.aggregated['24h'].exchange.netFlowUsd);
 
     return NextResponse.json(intelligence, {
       headers: {
@@ -40,10 +44,18 @@ export async function GET(request: NextRequest) {
         chains,
         metrics: [],
         aggregated: {
-          whale: { netFlowUsd: 0, walletCount: 0 },
-          smartTrader: { netFlowUsd: 0, walletCount: 0 },
-          exchange: { netFlowUsd: 0, walletCount: 0 },
-          freshWallets: { netFlowUsd: 0, walletCount: 0 },
+          '1h': {
+            whale: { netFlowUsd: 0, walletCount: 0 },
+            smartTrader: { netFlowUsd: 0, walletCount: 0 },
+            exchange: { netFlowUsd: 0, walletCount: 0 },
+            freshWallets: { netFlowUsd: 0, walletCount: 0 },
+          },
+          '24h': {
+            whale: { netFlowUsd: 0, walletCount: 0 },
+            smartTrader: { netFlowUsd: 0, walletCount: 0 },
+            exchange: { netFlowUsd: 0, walletCount: 0 },
+            freshWallets: { netFlowUsd: 0, walletCount: 0 },
+          },
         },
         lastUpdated: new Date().toISOString(),
       },

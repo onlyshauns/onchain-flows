@@ -22,9 +22,19 @@ export function IntelligenceSummary({
               key={i}
               className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-4 animate-pulse"
             >
-              <div className="h-6 bg-zinc-800 dark:bg-zinc-800 rounded mb-2"></div>
-              <div className="h-8 bg-zinc-800 dark:bg-zinc-800 rounded mb-1"></div>
-              <div className="h-4 bg-zinc-800 dark:bg-zinc-800 rounded w-20"></div>
+              <div className="h-6 bg-zinc-800 dark:bg-zinc-800 rounded mb-3"></div>
+              {/* 1h row */}
+              <div className="space-y-1 mb-3">
+                <div className="h-6 bg-zinc-800 dark:bg-zinc-800 rounded mb-1"></div>
+                <div className="h-4 bg-zinc-800 dark:bg-zinc-800 rounded w-24"></div>
+              </div>
+              {/* Divider */}
+              <div className="border-t border-[var(--card-border)] my-2"></div>
+              {/* 24h row */}
+              <div className="space-y-1">
+                <div className="h-6 bg-zinc-800 dark:bg-zinc-800 rounded mb-1"></div>
+                <div className="h-4 bg-zinc-800 dark:bg-zinc-800 rounded w-24"></div>
+              </div>
             </div>
           ))}
         </div>
@@ -42,7 +52,7 @@ export function IntelligenceSummary({
     <div className="mb-6">
       <div className="mb-3">
         <h2 className="text-sm font-medium text-white mb-1">
-          📊 Flow Intelligence (Last 1h)
+          📊 Flow Intelligence
         </h2>
         <p className="text-xs text-zinc-400">
           <span className="font-medium">Top Token Flows</span> - Aggregate inflows vs outflows across major tokens on ETH, SOL, and Base by wallet category
@@ -53,22 +63,40 @@ export function IntelligenceSummary({
         <IntelligenceCard
           emoji="🐋"
           label="Whales"
-          netFlowUsd={aggregated.whale.netFlowUsd}
-          walletCount={aggregated.whale.walletCount}
+          data1h={{
+            netFlowUsd: aggregated['1h'].whale.netFlowUsd,
+            walletCount: aggregated['1h'].whale.walletCount,
+          }}
+          data24h={{
+            netFlowUsd: aggregated['24h'].whale.netFlowUsd,
+            walletCount: aggregated['24h'].whale.walletCount,
+          }}
         />
 
         <IntelligenceCard
           emoji="🧠"
           label="Smart Money"
-          netFlowUsd={aggregated.smartTrader.netFlowUsd}
-          walletCount={aggregated.smartTrader.walletCount}
+          data1h={{
+            netFlowUsd: aggregated['1h'].smartTrader.netFlowUsd,
+            walletCount: aggregated['1h'].smartTrader.walletCount,
+          }}
+          data24h={{
+            netFlowUsd: aggregated['24h'].smartTrader.netFlowUsd,
+            walletCount: aggregated['24h'].smartTrader.walletCount,
+          }}
         />
 
         <IntelligenceCard
           emoji="🏦"
           label="Exchanges"
-          netFlowUsd={aggregated.exchange.netFlowUsd}
-          walletCount={aggregated.exchange.walletCount}
+          data1h={{
+            netFlowUsd: aggregated['1h'].exchange.netFlowUsd,
+            walletCount: aggregated['1h'].exchange.walletCount,
+          }}
+          data24h={{
+            netFlowUsd: aggregated['24h'].exchange.netFlowUsd,
+            walletCount: aggregated['24h'].exchange.walletCount,
+          }}
         />
       </div>
 

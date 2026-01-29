@@ -63,10 +63,18 @@ export interface FlowIntelligenceSummary {
   chains: Chain[];
   metrics: FlowIntelligenceMetrics[];
   aggregated: {
-    whale: { netFlowUsd: number; walletCount: number };
-    smartTrader: { netFlowUsd: number; walletCount: number };
-    exchange: { netFlowUsd: number; walletCount: number };
-    freshWallets: { netFlowUsd: number; walletCount: number };
+    '1h': {
+      whale: { netFlowUsd: number; walletCount: number };
+      smartTrader: { netFlowUsd: number; walletCount: number };
+      exchange: { netFlowUsd: number; walletCount: number };
+      freshWallets: { netFlowUsd: number; walletCount: number };
+    };
+    '24h': {
+      whale: { netFlowUsd: number; walletCount: number };
+      smartTrader: { netFlowUsd: number; walletCount: number };
+      exchange: { netFlowUsd: number; walletCount: number };
+      freshWallets: { netFlowUsd: number; walletCount: number };
+    };
   };
   lastUpdated: string;
 }
@@ -78,6 +86,37 @@ export async function fetchFlowIntelligence(
   chains: Chain[]
 ): Promise<FlowIntelligenceSummary> {
   const client = getNansenClient();
+
+  // Fetch both 1h and 1d (24h) data in parallel
+  const [metrics1h, metrics24h] = await Promise.all([
+    fetchMetricsForTimeframe(client, chains, '1h'),
+    fetchMetricsForTimeframe(client, chains, '1d'),
+  ]);
+
+  console.log('[Intelligence] 1h metrics count:', metrics1h.length);
+  console.log('[Intelligence] 1d metrics count:', metrics24h.length);
+  console.log('[Intelligence] 1h exchange wallets:', metrics1h.reduce((sum, m) => sum + m.exchange.walletCount, 0));
+  console.log('[Intelligence] 1d exchange wallets:', metrics24h.reduce((sum, m) => sum + m.exchange.walletCount, 0));
+
+  return {
+    chains,
+    metrics: metrics1h, // Use 1h for backwards compatibility
+    aggregated: {
+      '1h': aggregateMetrics(metrics1h),
+      '24h': aggregateMetrics(metrics24h),
+    },
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+/**
+ * Fetch metrics for a specific timeframe
+ */
+async function fetchMetricsForTimeframe(
+  client: ReturnType<typeof getNansenClient>,
+  chains: Chain[],
+  timeframe: '1h' | '1d'
+): Promise<FlowIntelligenceMetrics[]> {
   const allMetrics: FlowIntelligenceMetrics[] = [];
 
   // Fetch intelligence for ALL tokens on each chain in parallel
@@ -87,14 +126,14 @@ export async function fetchFlowIntelligence(
 
     return tokens.map(async token => {
       try {
-        const response = await client.getFlowIntelligence(chain, token, '1h');
+        const response = await client.getFlowIntelligence(chain, token, timeframe);
 
         if (response && response.data && response.data.length > 0) {
           const data = response.data[0]; // Latest data point
           return mapToFlowIntelligenceMetrics(chain, token, data);
         }
       } catch (error) {
-        console.error(`[Intelligence] Error fetching ${chain}/${token}:`, error);
+        console.error(`[Intelligence] Error fetching ${chain}/${token} (${timeframe}):`, error);
         // Return null on error, we'll filter it out
       }
       return null;
@@ -109,15 +148,7 @@ export async function fetchFlowIntelligence(
     if (result) allMetrics.push(result);
   }
 
-  // Aggregate metrics across all chains and tokens
-  const aggregated = aggregateMetrics(allMetrics);
-
-  return {
-    chains,
-    metrics: allMetrics,
-    aggregated,
-    lastUpdated: new Date().toISOString(),
-  };
+  return allMetrics;
 }
 
 /**
@@ -159,7 +190,12 @@ function mapToFlowIntelligenceMetrics(
  */
 function aggregateMetrics(
   metrics: FlowIntelligenceMetrics[]
-): FlowIntelligenceSummary['aggregated'] {
+): {
+  whale: { netFlowUsd: number; walletCount: number };
+  smartTrader: { netFlowUsd: number; walletCount: number };
+  exchange: { netFlowUsd: number; walletCount: number };
+  freshWallets: { netFlowUsd: number; walletCount: number };
+} {
   const aggregated = {
     whale: { netFlowUsd: 0, walletCount: 0 },
     smartTrader: { netFlowUsd: 0, walletCount: 0 },
