@@ -167,6 +167,17 @@ export default function Home() {
     return true;
   });
 
+  // Debug logging for frontend filtering
+  console.log('[Home] Filter applied:', categoryFilter);
+  console.log('[Home] Total flows:', flows.length);
+  console.log('[Home] Filtered flows:', filteredFlows.length);
+  if (flows.length > 0) {
+    console.log('[Home] Sample flow tags:', flows[0].metadata?.tags);
+  }
+  if (filteredFlows.length === 0 && flows.length > 0) {
+    console.warn('[Home] Filter returned 0 results but we have flows! Check tag logic');
+  }
+
   const toggleChain = (chain: Chain) => {
     setChainFilter(prev => {
       if (prev.includes(chain)) {

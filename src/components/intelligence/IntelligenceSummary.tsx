@@ -20,7 +20,7 @@ export function IntelligenceSummary({
           {[1, 2, 3, 4].map((i) => (
             <div
               key={i}
-              className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 animate-pulse"
+              className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 animate-pulse"
             >
               <div className="h-6 bg-zinc-200 dark:bg-zinc-800 rounded mb-2"></div>
               <div className="h-8 bg-zinc-200 dark:bg-zinc-800 rounded mb-1"></div>
@@ -44,9 +44,17 @@ export function IntelligenceSummary({
         <h2 className="text-sm font-medium text-white mb-1">
           📊 Flow Intelligence (Last 1h)
         </h2>
-        <p className="text-xs text-zinc-400">
-          Net flow trends by wallet category - positive means buying/accumulation, negative means selling/distribution
+        <p className="text-xs text-zinc-400 mb-2">
+          <span className="font-medium">Major Token Flows</span> (USDC, USDT, SOL) across ETH, SOL, and Base chains - Shows aggregate inflows vs outflows by wallet category over the last hour
         </p>
+        <div className="flex gap-2 items-center text-xs text-zinc-500">
+          <span>Tracking:</span>
+          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">USDC</span>
+          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">USDT</span>
+          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">SOL</span>
+          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">WETH</span>
+          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">WBTC</span>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

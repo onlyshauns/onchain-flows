@@ -11,6 +11,37 @@ import { NansenTransfer } from '@/lib/nansen/types';
 import { movementsToFlows } from '@/server/flows/mapper';
 import { rankFlows } from '@/server/flows/scorer';
 
+/**
+ * Add tags to movements based on fetch source
+ * This bypasses the label-matching problem in enrichTags
+ */
+function addSourceTags(movements: Movement[], source: {
+  type: 'smart-money' | 'public-figure' | 'whale' | 'exchange';
+  tier: number;
+}): Movement[] {
+  return movements.map(m => {
+    const newTags = [...(m.tags || [])];
+
+    // Add source-based tags
+    if (source.type === 'smart-money' && !newTags.includes('smart_money')) {
+      newTags.push('smart_money');
+    }
+    if (source.type === 'public-figure' && !newTags.includes('public_figure')) {
+      newTags.push('public_figure');
+    }
+    if (source.type === 'exchange' && !newTags.includes('exchange')) {
+      newTags.push('exchange');
+    }
+
+    // Tier 1 DEX trades are always smart money
+    if (source.tier === 1 && m.movementType === 'swap' && !newTags.includes('smart_money')) {
+      newTags.push('smart_money');
+    }
+
+    return { ...m, tags: newTags };
+  });
+}
+
 // Singletons (instantiated once per server instance)
 const entityEnricher = new EntityEnricher();
 const deduplicator = new Deduplicator();
@@ -78,7 +109,9 @@ export async function GET(request: NextRequest) {
       since,
     }).then(trades => {
       console.log(`[API] Tier 1: ${trades.length} smart money DEX trades`);
-      return trades.map(t => ({ ...normalizeDEXTrade(t), tier: 1 as const }));
+      const normalized = trades.map(t => ({ ...normalizeDEXTrade(t), tier: 1 as const }));
+      // Tag these as smart money since they're from Smart Money API filter
+      return addSourceTags(normalized, { type: 'smart-money', tier: 1 });
     }).catch(err => {
       console.error('[API] Tier 1 error:', err);
       return [];
@@ -97,10 +130,12 @@ export async function GET(request: NextRequest) {
           toIncludeSmartMoneyLabels: ['Public Figure', 'Influencer'],
         });
         console.log(`[API] Public figures ${chain}: ${publicFigures.length} movements`);
-        return publicFigures.map(t => ({
+        const normalized = publicFigures.map(t => ({
           ...normalizeTransfer(t, chain),
           tier: 1 as const  // Treat as Tier 1 for high priority scoring
         }));
+        // Tag these as public figures
+        return addSourceTags(normalized, { type: 'public-figure', tier: 1 });
       } catch (err) {
         console.error(`[API] Public figures ${chain} error:`, err);
         return [];
@@ -122,9 +157,11 @@ export async function GET(request: NextRequest) {
         });
         console.log(`[API] Tier 2 ${chain}: ${labeledTransfers.length} labeled transfers`);
         // Filter to avoid overlap with Tier 3 (only $500K-$5M range)
-        return labeledTransfers
+        const normalized = labeledTransfers
           .filter(t => t.transfer_value_usd < 5_000_000)
           .map(t => ({ ...normalizeTransfer(t, chain), tier: 2 as const }));
+        // Tag these as smart money (fetched with Smart Money labels)
+        return addSourceTags(normalized, { type: 'smart-money', tier: 2 });
       } catch (err) {
         console.error(`[API] Tier 2 ${chain} error:`, err);
         return [];
@@ -175,6 +212,24 @@ export async function GET(request: NextRequest) {
       .map(m => ({ ...m, confidence: calculateConfidence(m) }));
 
     console.log(`[API] Enriched ${movements.length} movements`);
+
+    // Debug logging to see tag distribution
+    const tagStats = movements.reduce((acc, m) => {
+      m.tags.forEach(tag => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    }, {} as Record<string, number>);
+    console.log(`[API] Tag distribution:`, tagStats);
+
+    // Log sample movements with their tags
+    console.log('[API] Sample movements with tags:', movements.slice(0, 3).map(m => ({
+      from: m.fromLabel || 'unlabeled',
+      to: m.toLabel || 'unlabeled',
+      amount: m.amountUsd,
+      tags: m.tags,
+      type: m.movementType
+    })));
 
     // Deduplication (removes duplicates and same-entity movements)
     movements = deduplicator.deduplicate(movements);
