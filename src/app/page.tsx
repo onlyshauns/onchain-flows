@@ -185,19 +185,24 @@ export default function Home() {
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-[var(--foreground)] mb-3">Chains</h3>
           <div className="flex gap-2 overflow-x-auto pb-2">
-            {(['ethereum', 'solana', 'base'] as Chain[]).map(chain => {
-              const isActive = chainFilter.includes(chain);
+            {[
+              { id: 'ethereum' as Chain, label: 'ETH', icon: 'https://cryptologos.cc/logos/ethereum-eth-logo.svg?v=035' },
+              { id: 'solana' as Chain, label: 'SOL', icon: 'https://cryptologos.cc/logos/solana-sol-logo.svg?v=035' },
+              { id: 'base' as Chain, label: 'BASE', icon: 'https://avatars.githubusercontent.com/u/108554348?s=280&v=4' },
+            ].map(chain => {
+              const isActive = chainFilter.includes(chain.id);
               return (
                 <button
-                  key={chain}
-                  onClick={() => toggleChain(chain)}
+                  key={chain.id}
+                  onClick={() => toggleChain(chain.id)}
                   className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 border ${
                     isActive
                       ? 'bg-[var(--accent)] text-[var(--nansen-dark)] shadow-[0_0_15px_rgba(0,255,167,0.3)] border-[var(--accent)]'
                       : 'bg-[var(--card-bg)] border-[var(--accent)] border-opacity-40 text-[var(--foreground)] opacity-60 hover:opacity-100 hover:border-opacity-70'
                   }`}
                 >
-                  <span>{chain.toUpperCase()}</span>
+                  <img src={chain.icon} alt={chain.label} className="w-5 h-5" />
+                  <span>{chain.label}</span>
                 </button>
               );
             })}
@@ -207,43 +212,43 @@ export default function Home() {
         {/* Tab Navigation */}
         <div className="mb-6">
           <div className="border-b border-zinc-800">
-            <div className="flex gap-1 overflow-x-auto">
+            <div className="flex gap-2 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('intelligence')}
-                className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'intelligence'
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
                 📊 Flow Intelligence
               </button>
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'all'
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
                 🌊 All Flows
               </button>
               <button
                 onClick={() => setActiveTab('deposits')}
-                className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'deposits'
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
                 📥 Big Deposits to Exchanges
               </button>
               <button
                 onClick={() => setActiveTab('withdrawals')}
-                className={`px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-6 py-4 text-base font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
                   activeTab === 'withdrawals'
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]'
-                    : 'text-zinc-400 hover:text-white'
+                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
                 📤 Big Withdrawals from Exchanges

@@ -44,17 +44,9 @@ export function IntelligenceSummary({
         <h2 className="text-sm font-medium text-white mb-1">
           📊 Flow Intelligence (Last 1h)
         </h2>
-        <p className="text-xs text-zinc-400 mb-2">
-          <span className="font-medium">Major Token Flows</span> (USDC, USDT, SOL) across ETH, SOL, and Base chains - Shows aggregate inflows vs outflows by wallet category over the last hour
+        <p className="text-xs text-zinc-400">
+          <span className="font-medium">Top Token Flows</span> - Aggregate inflows vs outflows across major tokens on ETH, SOL, and Base by wallet category
         </p>
-        <div className="flex gap-2 items-center text-xs text-zinc-500">
-          <span>Tracking:</span>
-          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">USDC</span>
-          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">USDT</span>
-          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">SOL</span>
-          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">WETH</span>
-          <span className="px-2 py-0.5 bg-zinc-800 rounded-md">WBTC</span>
-        </div>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
