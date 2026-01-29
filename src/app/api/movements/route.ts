@@ -222,6 +222,15 @@ export async function GET(request: NextRequest) {
     }, {} as Record<string, number>);
     console.log(`[API] Tag distribution:`, tagStats);
 
+    // Debug: Check for $10M+ exchange movements
+    const largeExchangeDeposits = movements.filter(m =>
+      m.tags.includes('exchange_deposit') && m.amountUsd >= 10_000_000
+    );
+    const largeExchangeWithdrawals = movements.filter(m =>
+      m.tags.includes('exchange_withdrawal') && m.amountUsd >= 10_000_000
+    );
+    console.log(`[API] Large ($10M+) deposits: ${largeExchangeDeposits.length}, withdrawals: ${largeExchangeWithdrawals.length}`);
+
     // Log sample movements with their tags
     console.log('[API] Sample movements with tags:', movements.slice(0, 3).map(m => ({
       from: m.fromLabel || 'unlabeled',

@@ -241,7 +241,7 @@ export default function Home() {
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
-                📥 Big Deposits to Exchanges
+                📥 Large Deposits
               </button>
               <button
                 onClick={() => setActiveTab('withdrawals')}
@@ -251,7 +251,7 @@ export default function Home() {
                     : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
                 }`}
               >
-                📤 Big Withdrawals from Exchanges
+                📤 Large Withdrawals
               </button>
             </div>
           </div>

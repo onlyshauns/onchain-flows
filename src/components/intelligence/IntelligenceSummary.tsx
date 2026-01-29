@@ -16,8 +16,8 @@ export function IntelligenceSummary({
         <h2 className="text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-3">
           📊 Flow Intelligence
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
+        <div className="grid grid-cols-3 gap-4">
+          {[1, 2, 3].map((i) => (
             <div
               key={i}
               className="bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 animate-pulse"
@@ -49,7 +49,7 @@ export function IntelligenceSummary({
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <IntelligenceCard
           emoji="🐋"
           label="Whales"
@@ -69,13 +69,6 @@ export function IntelligenceSummary({
           label="Exchanges"
           netFlowUsd={aggregated.exchange.netFlowUsd}
           walletCount={aggregated.exchange.walletCount}
-        />
-
-        <IntelligenceCard
-          emoji="🆕"
-          label="Fresh Wallets"
-          netFlowUsd={aggregated.freshWallets.netFlowUsd}
-          walletCount={aggregated.freshWallets.walletCount}
         />
       </div>
 

@@ -37,17 +37,39 @@ export function enrichTags(movement: Movement): Movement {
   if (toIsExchange || fromIsExchange) {
     tags.push('exchange');
 
+    // Debug logging for exchange detection
+    if (movement.amountUsd >= 10_000_000) {
+      console.log('[TagEnricher] Exchange detected ($10M+):', {
+        amount: `$${(movement.amountUsd / 1_000_000).toFixed(1)}M`,
+        from: movement.fromLabel,
+        to: movement.toLabel,
+        fromIsExchange,
+        toIsExchange,
+      });
+    }
+
     // Determine direction: deposit (TO exchange) or withdrawal (FROM exchange)
     // BUT exclude exchange-to-exchange transfers (internal movements)
     if (toIsExchange && !fromIsExchange) {
       // Deposit: going TO exchange from non-exchange
       tags.push('exchange_deposit');
+      if (movement.amountUsd >= 10_000_000) {
+        console.log('[TagEnricher] → Tagged as exchange_deposit');
+      }
     }
     if (fromIsExchange && !toIsExchange) {
       // Withdrawal: coming FROM exchange to non-exchange
       tags.push('exchange_withdrawal');
+      if (movement.amountUsd >= 10_000_000) {
+        console.log('[TagEnricher] → Tagged as exchange_withdrawal');
+      }
     }
     // If both are exchanges, don't add deposit/withdrawal tags (internal exchange transfer)
+    if (toIsExchange && fromIsExchange) {
+      if (movement.amountUsd >= 10_000_000) {
+        console.log('[TagEnricher] → Skipped (exchange-to-exchange transfer)');
+      }
+    }
   }
 
   // Fund tag
