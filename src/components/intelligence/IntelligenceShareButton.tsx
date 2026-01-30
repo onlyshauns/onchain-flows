@@ -14,59 +14,68 @@ export function IntelligenceShareButton({
   intelligence,
 }: IntelligenceShareButtonProps) {
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const generateTweet = async () => {
-    const { aggregated } = intelligence;
-    const data = aggregated['1h'];
+    // Always fetch fresh data each time
+    setIsGenerating(true);
+    try {
+      // Fetch latest intelligence data
+      const chainsParam = intelligence.chains.join(',');
+      const [freshIntelligence, fearGreed] = await Promise.all([
+        fetch(`/api/intelligence?chains=${chainsParam}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' },
+        }).then(r => r.json()),
+        fetchCMCFearGreedIndex(),
+      ]);
 
-    // Fetch CMC Fear & Greed Index
-    const fearGreed = await fetchCMCFearGreedIndex();
-    const sentiment = fearGreed ? getSentimentLevel(fearGreed.value) : null;
+      const data = freshIntelligence.aggregated['1h'];
+      const sentiment = fearGreed ? getSentimentLevel(fearGreed.value) : null;
 
-    // Get the strongest signals
-    const signals = [];
+      // Format chain list
+      const chains = intelligence.chains.map(c => c.toUpperCase()).join(' + ');
 
-    if (Math.abs(data.whale.netFlowUsd) > 1_000_000) {
-      const direction = data.whale.netFlowUsd > 0 ? '📈 Accumulating' : '📉 Distributing';
-      signals.push(`${direction} Whales: ${formatFlow(data.whale.netFlowUsd)}`);
+      // Build comprehensive tweet with all 4 data points
+      const lines = [];
+
+      // 1. Fear & Greed Index
+      if (sentiment && fearGreed) {
+        lines.push(`${sentiment.emoji} Fear & Greed: ${fearGreed.value}/100 - ${sentiment.level}`);
+      }
+
+      lines.push(''); // Empty line
+      lines.push(`📊 1H Onchain Intelligence (${chains}):`);
+      lines.push(''); // Empty line
+
+      // 2. Whales
+      if (Math.abs(data.whale.netFlowUsd) > 100_000) {
+        const direction = data.whale.netFlowUsd > 0 ? '📈' : '📉';
+        const action = data.whale.netFlowUsd > 0 ? 'Accumulating' : 'Distributing';
+        lines.push(`${direction} Whales ${action}: ${formatFlow(Math.abs(data.whale.netFlowUsd))}`);
+      }
+
+      // 3. Smart Money
+      if (Math.abs(data.smartTrader.netFlowUsd) > 100_000) {
+        const direction = data.smartTrader.netFlowUsd > 0 ? '📈' : '📉';
+        const action = data.smartTrader.netFlowUsd > 0 ? 'Accumulating' : 'Distributing';
+        lines.push(`${direction} Smart Money ${action}: ${formatFlow(Math.abs(data.smartTrader.netFlowUsd))}`);
+      }
+
+      // 4. Exchanges
+      if (Math.abs(data.exchange.netFlowUsd) > 100_000) {
+        const direction = data.exchange.netFlowUsd < 0 ? '📤' : '📥';
+        const action = data.exchange.netFlowUsd < 0 ? 'Withdrawals' : 'Deposits';
+        lines.push(`${direction} Exchange ${action}: ${formatFlow(Math.abs(data.exchange.netFlowUsd))}`);
+      }
+
+      lines.push(''); // Empty line
+      lines.push('Track onchain flows in real-time 👇');
+
+      return lines.join('\n');
+    } finally {
+      setIsGenerating(false);
     }
-
-    if (Math.abs(data.smartTrader.netFlowUsd) > 500_000) {
-      const direction = data.smartTrader.netFlowUsd > 0 ? '📈 Accumulating' : '📉 Distributing';
-      signals.push(`${direction} Smart Money: ${formatFlow(data.smartTrader.netFlowUsd)}`);
-    }
-
-    if (Math.abs(data.exchange.netFlowUsd) > 5_000_000) {
-      // Inverted: negative = outflow = bullish
-      const direction = data.exchange.netFlowUsd < 0 ? '📤' : '📥';
-      const label = data.exchange.netFlowUsd < 0 ? 'Exchange Withdrawals' : 'Exchange Deposits';
-      signals.push(`${direction} ${label}: ${formatFlow(Math.abs(data.exchange.netFlowUsd))}`);
-    }
-
-    // Format chain list
-    const chains = intelligence.chains.map(c => c.toUpperCase()).join(' + ');
-
-    // Build tweet
-    let tweet = '';
-    if (sentiment && fearGreed) {
-      tweet = `${sentiment.emoji} MARKET SENTIMENT: ${fearGreed.value}/100 - ${sentiment.level.toUpperCase()}
-
-📊 1H Onchain Flows (${chains}):
-
-${signals.slice(0, 3).join('\n')}
-
-Track onchain flows in real-time 👇`;
-    } else {
-      tweet = `📊 ONCHAIN FLOW INTELLIGENCE
-
-1H Summary (${chains}):
-
-${signals.slice(0, 3).join('\n')}
-
-Track onchain flows in real-time 👇`;
-    }
-
-    return tweet;
   };
 
   const handleTwitterShare = async () => {
@@ -90,14 +99,16 @@ Track onchain flows in real-time 👇`;
     <div className="flex gap-2">
       <button
         onClick={handleTwitterShare}
-        className="flex items-center gap-2 px-4 py-2 bg-[var(--nansen-dark)] hover:bg-opacity-90 text-white rounded-lg font-medium transition-all text-sm shadow-sm"
+        disabled={isGenerating}
+        className="flex items-center gap-2 px-4 py-2 bg-[var(--nansen-dark)] hover:bg-opacity-90 text-white rounded-lg font-medium transition-all text-sm shadow-sm disabled:opacity-50"
       >
         <XIcon className="w-4 h-4" />
-        Share Intelligence
+        {isGenerating ? 'Loading...' : 'Share Intelligence'}
       </button>
       <button
         onClick={handleCopy}
-        className="p-2 rounded-lg bg-[var(--card-bg)] hover:bg-[var(--accent)] hover:bg-opacity-10 border border-[var(--card-border)] hover:border-[var(--accent)] transition-all text-[var(--foreground)] opacity-60 hover:opacity-100"
+        disabled={isGenerating}
+        className="p-2 rounded-lg bg-[var(--card-bg)] hover:bg-[var(--accent)] hover:bg-opacity-10 border border-[var(--card-border)] hover:border-[var(--accent)] transition-all text-[var(--foreground)] opacity-60 hover:opacity-100 disabled:opacity-30"
         title={copied ? 'Copied!' : 'Copy tweet'}
       >
         {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
@@ -107,17 +118,14 @@ Track onchain flows in real-time 👇`;
 }
 
 function formatFlow(value: number): string {
-  const abs = Math.abs(value);
-  const sign = value >= 0 ? '+' : '';
-
-  if (abs >= 1_000_000_000) {
-    return `${sign}$${(value / 1_000_000_000).toFixed(2)}B`;
+  if (value >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(2)}B`;
   }
-  if (abs >= 1_000_000) {
-    return `${sign}$${(value / 1_000_000).toFixed(1)}M`;
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
   }
-  if (abs >= 1_000) {
-    return `${sign}$${(value / 1_000).toFixed(0)}K`;
+  if (value >= 1_000) {
+    return `$${(value / 1_000).toFixed(0)}K`;
   }
-  return `${sign}$${value.toFixed(0)}`;
+  return `$${value.toFixed(0)}`;
 }

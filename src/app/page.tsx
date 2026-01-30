@@ -141,13 +141,13 @@ export default function Home() {
     }
 
     if (activeTab === 'deposits') {
-      // Big deposits: TO exchanges, $10M+
-      return tags.includes('exchange_deposit') && f.amountUsd >= 10_000_000;
+      // Big deposits: TO exchanges, $5M+ (lowered threshold)
+      return tags.includes('exchange_deposit') && f.amountUsd >= 5_000_000;
     }
 
     if (activeTab === 'withdrawals') {
-      // Big withdrawals: FROM exchanges, $10M+
-      return tags.includes('exchange_withdrawal') && f.amountUsd >= 10_000_000;
+      // Big withdrawals: FROM exchanges, $5M+ (lowered threshold)
+      return tags.includes('exchange_withdrawal') && f.amountUsd >= 5_000_000;
     }
 
     if (activeTab === 'funds') {
@@ -202,7 +202,7 @@ export default function Home() {
     <div className="min-h-screen bg-[var(--background)]">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Chain Filters */}
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-[var(--foreground)] mb-3">Chains</h3>
