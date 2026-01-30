@@ -37,32 +37,33 @@ export function FlowCard({ flow }: FlowCardProps) {
   ].join(' ');
 
   return (
-    <div className={cardClasses}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">{emoji}</span>
-          <div>
-            <h3 className="font-bold text-[var(--foreground)]">
-              {formatFlowType(flow.type)}
-            </h3>
-            <p className="text-xs text-[var(--foreground)] opacity-50">
-              {formatTimeAgo(flow.timestamp)}
-            </p>
+    <div className={`${cardClasses} flex flex-col`}>
+      <div className="flex-1">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">{emoji}</span>
+            <div>
+              <h3 className="font-bold text-[var(--foreground)]">
+                {formatFlowType(flow.type)}
+              </h3>
+              <p className="text-xs text-[var(--foreground)] opacity-50">
+                {formatTimeAgo(flow.timestamp)}
+              </p>
+            </div>
+          </div>
+          <ChainBadge chain={flow.chain} />
+        </div>
+
+        <div className="mb-3">
+          <div className="text-3xl font-bold text-[var(--accent)] mb-1.5">
+            {formatUsd(flow.amountUsd, 2)}
+          </div>
+          <div className="text-sm font-medium text-[var(--foreground)] opacity-70">
+            {flow.token.symbol}
           </div>
         </div>
-        <ChainBadge chain={flow.chain} />
-      </div>
 
-      <div className="mb-3">
-        <div className="text-3xl font-bold text-[var(--accent)] mb-1.5">
-          {formatUsd(flow.amountUsd, 2)}
-        </div>
-        <div className="text-sm font-medium text-[var(--foreground)] opacity-70">
-          {flow.token.symbol}
-        </div>
-      </div>
-
-      <div className="space-y-2 mb-3">
+        <div className="space-y-2 mb-3">
         {flow.type === 'token-launch' || flow.type === 'defi-activity' ? (
           <>
             <div className="flex items-center gap-2 text-sm">
@@ -120,6 +121,7 @@ export function FlowCard({ flow }: FlowCardProps) {
             </div>
           </>
         )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-[var(--card-border)]">
