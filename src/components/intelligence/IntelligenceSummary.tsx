@@ -1,5 +1,8 @@
 import { IntelligenceCard } from './IntelligenceCard';
+import { SentimentGauge } from './SentimentGauge';
+import { IntelligenceShareButton } from './IntelligenceShareButton';
 import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
+import { calculateSentiment } from '@/lib/utils/sentiment';
 
 interface IntelligenceSummaryProps {
   intelligence: FlowIntelligenceSummary | null;
@@ -44,13 +47,20 @@ export function IntelligenceSummary({
   }
 
   const { aggregated } = intelligence;
+  const sentiment = calculateSentiment(intelligence);
 
   return (
     <div className="mb-6">
-      <div className="mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-zinc-400">
           <span className="font-medium">Top Token Flows</span> - Aggregate inflows vs outflows across major tokens on ETH, SOL, and Base by wallet category
         </p>
+        <IntelligenceShareButton intelligence={intelligence} sentiment={sentiment} />
+      </div>
+
+      {/* Sentiment Gauge */}
+      <div className="mb-6">
+        <SentimentGauge sentiment={sentiment} />
       </div>
 
       <div className="grid grid-cols-3 gap-4">
