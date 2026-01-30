@@ -49,7 +49,6 @@ export function IntelligenceShareButton({
 
       lines.push(''); // Empty line
       lines.push(`📊 1H Onchain Intelligence (${chains}):`);
-      lines.push('Whale, Smart Money & Exchange flows tracked across major tokens');
       lines.push(''); // Empty line
 
       // 2. Whales - ALWAYS show (even if zero/small)
