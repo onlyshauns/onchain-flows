@@ -47,17 +47,17 @@ export function IntelligenceSummary({
 
   const { aggregated, tokenBreakdown } = intelligence;
 
-  // Extract token flows for each category
+  // Extract token flows for each category (lowered thresholds to show more data)
   const whaleTokens = tokenBreakdown
-    .filter(t => Math.abs(t.whale) > 100_000)
+    .filter(t => Math.abs(t.whale) > 50_000)
     .map(t => ({ symbol: t.symbol, amount: t.whale, direction: t.whale > 0 ? 'inflow' as const : 'outflow' as const }));
 
   const smartMoneyTokens = tokenBreakdown
-    .filter(t => Math.abs(t.smartTrader) > 100_000)
+    .filter(t => Math.abs(t.smartTrader) > 1_000)
     .map(t => ({ symbol: t.symbol, amount: t.smartTrader, direction: t.smartTrader > 0 ? 'inflow' as const : 'outflow' as const }));
 
   const exchangeTokens = tokenBreakdown
-    .filter(t => Math.abs(t.exchange) > 1_000_000)
+    .filter(t => Math.abs(t.exchange) > 500_000)
     .map(t => ({ symbol: t.symbol, amount: t.exchange, direction: t.exchange > 0 ? 'inflow' as const : 'outflow' as const }));
 
   return (
