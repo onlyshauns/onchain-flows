@@ -27,7 +27,7 @@ export function FlowCard({ flow }: FlowCardProps) {
   const isMediumPriority = score >= 70 && score < 90;
 
   const cardClasses = [
-    'bg-[var(--card-bg)] rounded-xl p-6 transition-all duration-300',
+    'bg-[var(--card-bg)] rounded-xl p-4 transition-all duration-300',
     'hover:shadow-lg hover:nansen-glow',
     isHighPriority
       ? 'border-2 border-yellow-500 dark:border-yellow-400 animate-pulse-subtle shadow-yellow-500/20'
@@ -38,29 +38,13 @@ export function FlowCard({ flow }: FlowCardProps) {
 
   return (
     <div className={cardClasses}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <span className="text-3xl">{emoji}</span>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">{emoji}</span>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-[var(--foreground)]">
-                {formatFlowType(flow.type)}
-              </h3>
-              {score > 0 && (
-                <span
-                  className={`text-xs font-bold px-2 py-0.5 rounded-full cursor-help ${
-                    isHighPriority
-                      ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400'
-                      : isMediumPriority
-                      ? 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
-                      : 'bg-zinc-500/20 text-zinc-600 dark:text-zinc-400'
-                  }`}
-                  title={`Interestingness Score: ${score}/100\n\nBased on:\n• Data quality (smart money trades score higher)\n• Transaction size\n• Entity reputation\n• Recency\n\n90+ = High priority\n70-89 = Medium priority\n<70 = Standard`}
-                >
-                  {score}
-                </span>
-              )}
-            </div>
+            <h3 className="font-bold text-[var(--foreground)]">
+              {formatFlowType(flow.type)}
+            </h3>
             <p className="text-xs text-[var(--foreground)] opacity-50">
               {formatTimeAgo(flow.timestamp)}
             </p>
@@ -69,8 +53,8 @@ export function FlowCard({ flow }: FlowCardProps) {
         <ChainBadge chain={flow.chain} />
       </div>
 
-      <div className="mb-5">
-        <div className="text-4xl font-bold text-[var(--accent)] mb-2">
+      <div className="mb-3">
+        <div className="text-3xl font-bold text-[var(--accent)] mb-1.5">
           {formatUsd(flow.amountUsd, 2)}
         </div>
         <div className="text-sm font-medium text-[var(--foreground)] opacity-70">
@@ -78,7 +62,7 @@ export function FlowCard({ flow }: FlowCardProps) {
         </div>
       </div>
 
-      <div className="space-y-3 mb-5">
+      <div className="space-y-2 mb-3">
         {flow.type === 'token-launch' || flow.type === 'defi-activity' ? (
           <>
             <div className="flex items-center gap-2 text-sm">
@@ -138,7 +122,7 @@ export function FlowCard({ flow }: FlowCardProps) {
         )}
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-[var(--card-border)]">
+      <div className="flex items-center justify-between pt-3 border-t border-[var(--card-border)]">
         <a
           href={nansenUrl}
           target="_blank"

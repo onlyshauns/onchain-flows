@@ -26,6 +26,30 @@ export function formatUsd(value: number, decimals: number = 2): string {
 }
 
 /**
+ * Format USD with proper negative handling (for flow data)
+ * e.g., -43871797 -> "-$43.9M", 1234567 -> "+$1.23M"
+ */
+export function formatFlowUsd(value: number, showSign: boolean = false): string {
+  const abs = Math.abs(value);
+  const sign = value > 0 ? (showSign ? '+' : '') : value < 0 ? '-' : '';
+
+  let formatted: string;
+  if (abs >= 1_000_000_000) {
+    formatted = `${(abs / 1_000_000_000).toFixed(2)}B`;
+  } else if (abs >= 1_000_000) {
+    formatted = `${(abs / 1_000_000).toFixed(2)}M`;
+  } else if (abs >= 1_000) {
+    formatted = `${(abs / 1_000).toFixed(1)}K`;
+  } else if (abs === 0) {
+    return '$0';
+  } else {
+    formatted = abs.toFixed(0);
+  }
+
+  return `${sign}$${formatted}`;
+}
+
+/**
  * Format a blockchain address (truncate middle)
  * e.g., "0x1234...5678" or "Abc123...xyz789"
  */

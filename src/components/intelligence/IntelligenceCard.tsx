@@ -1,3 +1,5 @@
+import { formatFlowUsd } from '@/lib/utils/formatting';
+
 interface TokenFlow {
   symbol: string;
   amount: number;
@@ -43,7 +45,7 @@ export function IntelligenceCard({
       ? 'text-gray-600 dark:text-gray-400'
       : 'text-red-600 dark:text-red-400';
 
-    const formattedFlow = formatCurrency(Math.abs(netFlowUsd));
+    const formattedFlow = formatFlowUsd(netFlowUsd);
 
     // Get descriptive label based on type and direction
     let actionLabel = '';
@@ -125,7 +127,7 @@ export function IntelligenceCard({
                 <div key={idx} className="flex items-center justify-between text-xs">
                   <span className="text-zinc-400">{flow.symbol}</span>
                   <span className={`font-medium ${color}`}>
-                    {isPositive ? '+' : ''}{formatCurrency(flow.amount)}
+                    {formatFlowUsd(flow.amount, true)}
                   </span>
                 </div>
               );
@@ -135,17 +137,4 @@ export function IntelligenceCard({
       )}
     </div>
   );
-}
-
-function formatCurrency(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  }
-  if (value >= 1_000_000) {
-    return `$${(value / 1_000_000).toFixed(2)}M`;
-  }
-  if (value >= 1_000) {
-    return `$${(value / 1_000).toFixed(2)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }

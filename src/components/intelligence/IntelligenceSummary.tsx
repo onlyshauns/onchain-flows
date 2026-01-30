@@ -61,8 +61,8 @@ export function IntelligenceSummary({
     .map(t => ({ symbol: t.symbol, amount: t.exchange, direction: t.exchange > 0 ? 'inflow' as const : 'outflow' as const }));
 
   return (
-    <div className="mb-4">
-      <div className="mb-2 flex items-center justify-between">
+    <div className="mb-2">
+      <div className="mb-1.5 flex items-center justify-between">
         <p className="text-xs text-zinc-400">
           <span className="font-medium">Top Token Flows</span> - Aggregate inflows vs outflows across major tokens on ETH, SOL, and Base by wallet category
         </p>
@@ -70,11 +70,11 @@ export function IntelligenceSummary({
       </div>
 
       {/* Fear & Greed Index */}
-      <div className="mb-4">
+      <div className="mb-2">
         <SentimentGauge />
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-3">
         <IntelligenceCard
           emoji="🐋"
           label="Whales"

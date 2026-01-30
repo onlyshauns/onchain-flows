@@ -1,5 +1,6 @@
 import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
 import { SentimentAnalysis, calculateSentiment } from './sentiment';
+import { formatFlowUsd } from './formatting';
 
 /**
  * Generate shareable tweet text for Flow Intelligence summary
@@ -16,19 +17,19 @@ export function generateIntelligenceTweet(
 
   if (Math.abs(data.whale.netFlowUsd) > 1_000_000) {
     const direction = data.whale.netFlowUsd > 0 ? '📈' : '📉';
-    signals.push(`${direction} Whales: ${formatFlow(data.whale.netFlowUsd)}`);
+    signals.push(`${direction} Whales: ${formatFlowUsd(data.whale.netFlowUsd)}`);
   }
 
   if (Math.abs(data.smartTrader.netFlowUsd) > 500_000) {
     const direction = data.smartTrader.netFlowUsd > 0 ? '📈' : '📉';
-    signals.push(`${direction} Smart Money: ${formatFlow(data.smartTrader.netFlowUsd)}`);
+    signals.push(`${direction} Smart Money: ${formatFlowUsd(data.smartTrader.netFlowUsd)}`);
   }
 
   if (Math.abs(data.exchange.netFlowUsd) > 5_000_000) {
     // Inverted: negative = outflow = bullish
     const direction = data.exchange.netFlowUsd < 0 ? '📤' : '📥';
     const label = data.exchange.netFlowUsd < 0 ? 'Exchange Withdrawals' : 'Exchange Deposits';
-    signals.push(`${direction} ${label}: ${formatFlow(Math.abs(data.exchange.netFlowUsd))}`);
+    signals.push(`${direction} ${label}: ${formatFlowUsd(Math.abs(data.exchange.netFlowUsd))}`);
   }
 
   // Format chain list
@@ -75,20 +76,4 @@ export async function copyIntelligenceTweetToClipboard(
     console.error('Failed to copy intelligence tweet to clipboard:', error);
     return false;
   }
-}
-
-function formatFlow(value: number): string {
-  const abs = Math.abs(value);
-  const sign = value >= 0 ? '+' : '';
-
-  if (abs >= 1_000_000_000) {
-    return `${sign}$${(value / 1_000_000_000).toFixed(2)}B`;
-  }
-  if (abs >= 1_000_000) {
-    return `${sign}$${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (abs >= 1_000) {
-    return `${sign}$${(value / 1_000).toFixed(0)}K`;
-  }
-  return `${sign}$${value.toFixed(0)}`;
 }

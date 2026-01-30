@@ -94,30 +94,6 @@ export function SentimentGauge({}: SentimentGaugeProps) {
         </div>
       </div>
 
-      {/* Description */}
-      <div className="space-y-1 mb-2">
-        <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
-          What This Means
-        </div>
-        <div className="text-xs text-zinc-300">
-          {fearGreed.value >= 80 && (
-            <p>Extreme greed signals overbought conditions. Market may be due for a correction. Consider taking profits.</p>
-          )}
-          {fearGreed.value >= 60 && fearGreed.value < 80 && (
-            <p>Greed is building in the market. Prices rising, but watch for reversal signals.</p>
-          )}
-          {fearGreed.value >= 40 && fearGreed.value < 60 && (
-            <p>Market sentiment is neutral. No extreme emotions driving price action.</p>
-          )}
-          {fearGreed.value >= 20 && fearGreed.value < 40 && (
-            <p>Fear is present in the market. May be opportunities to buy quality assets at discount.</p>
-          )}
-          {fearGreed.value < 20 && (
-            <p>Extreme fear often presents the best buying opportunities. "Be greedy when others are fearful."</p>
-          )}
-        </div>
-      </div>
-
       {/* Methodology */}
       <div className="mt-3 pt-3 border-t border-zinc-800">
         <details className="text-xs text-zinc-400">

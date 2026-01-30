@@ -5,6 +5,7 @@ import { Copy, Check } from 'lucide-react';
 import { XIcon } from '../shared/XIcon';
 import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
 import { fetchCMCFearGreedIndex, getSentimentLevel } from '@/lib/cmc/fear-greed';
+import { formatFlowUsd } from '@/lib/utils/formatting';
 
 interface IntelligenceShareButtonProps {
   intelligence: FlowIntelligenceSummary;
@@ -33,6 +34,8 @@ export function IntelligenceShareButton({
       const data = freshIntelligence.aggregated['1h'];
       const sentiment = fearGreed ? getSentimentLevel(fearGreed.value) : null;
 
+      console.log('[Share] Intelligence data:', data);
+
       // Format chain list
       const chains = intelligence.chains.map(c => c.toUpperCase()).join(' + ');
 
@@ -48,26 +51,20 @@ export function IntelligenceShareButton({
       lines.push(`📊 1H Onchain Intelligence (${chains}):`);
       lines.push(''); // Empty line
 
-      // 2. Whales
-      if (Math.abs(data.whale.netFlowUsd) > 100_000) {
-        const direction = data.whale.netFlowUsd > 0 ? '📈' : '📉';
-        const action = data.whale.netFlowUsd > 0 ? 'Accumulating' : 'Distributing';
-        lines.push(`${direction} Whales ${action}: ${formatFlow(Math.abs(data.whale.netFlowUsd))}`);
-      }
+      // 2. Whales - ALWAYS show (even if zero/small)
+      const whaleDirection = data.whale.netFlowUsd > 0 ? '📈' : data.whale.netFlowUsd < 0 ? '📉' : '➡️';
+      const whaleAction = data.whale.netFlowUsd > 0 ? 'Accumulating' : data.whale.netFlowUsd < 0 ? 'Distributing' : 'Neutral';
+      lines.push(`${whaleDirection} Whales ${whaleAction}: ${formatFlowUsd(data.whale.netFlowUsd)}`);
 
-      // 3. Smart Money
-      if (Math.abs(data.smartTrader.netFlowUsd) > 100_000) {
-        const direction = data.smartTrader.netFlowUsd > 0 ? '📈' : '📉';
-        const action = data.smartTrader.netFlowUsd > 0 ? 'Accumulating' : 'Distributing';
-        lines.push(`${direction} Smart Money ${action}: ${formatFlow(Math.abs(data.smartTrader.netFlowUsd))}`);
-      }
+      // 3. Smart Money - ALWAYS show
+      const smartDirection = data.smartTrader.netFlowUsd > 0 ? '📈' : data.smartTrader.netFlowUsd < 0 ? '📉' : '➡️';
+      const smartAction = data.smartTrader.netFlowUsd > 0 ? 'Accumulating' : data.smartTrader.netFlowUsd < 0 ? 'Distributing' : 'Neutral';
+      lines.push(`${smartDirection} Smart Money ${smartAction}: ${formatFlowUsd(data.smartTrader.netFlowUsd)}`);
 
-      // 4. Exchanges
-      if (Math.abs(data.exchange.netFlowUsd) > 100_000) {
-        const direction = data.exchange.netFlowUsd < 0 ? '📤' : '📥';
-        const action = data.exchange.netFlowUsd < 0 ? 'Withdrawals' : 'Deposits';
-        lines.push(`${direction} Exchange ${action}: ${formatFlow(Math.abs(data.exchange.netFlowUsd))}`);
-      }
+      // 4. Exchanges - ALWAYS show
+      const exchangeDirection = data.exchange.netFlowUsd < 0 ? '📤' : data.exchange.netFlowUsd > 0 ? '📥' : '➡️';
+      const exchangeAction = data.exchange.netFlowUsd < 0 ? 'Withdrawals' : data.exchange.netFlowUsd > 0 ? 'Deposits' : 'Neutral';
+      lines.push(`${exchangeDirection} Exchange ${exchangeAction}: ${formatFlowUsd(data.exchange.netFlowUsd)}`);
 
       lines.push(''); // Empty line
       lines.push('Track onchain flows in real-time 👇');
@@ -115,17 +112,4 @@ export function IntelligenceShareButton({
       </button>
     </div>
   );
-}
-
-function formatFlow(value: number): string {
-  if (value >= 1_000_000_000) {
-    return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  }
-  if (value >= 1_000_000) {
-    return `$${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (value >= 1_000) {
-    return `$${(value / 1_000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }

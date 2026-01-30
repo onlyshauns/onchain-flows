@@ -1,5 +1,7 @@
 'use client';
 
+import { formatFlowUsd } from '@/lib/utils/formatting';
+
 interface TokenFlow {
   symbol: string;
   amount: number;
@@ -46,7 +48,7 @@ export function IntelligenceBreakdown({
             <div key={idx} className="flex items-center justify-between text-xs">
               <span className="text-zinc-400">{flow.symbol}</span>
               <span className={`font-medium ${color}`}>
-                {isPositive ? '+' : ''}{formatCurrency(flow.amount)}
+                {formatFlowUsd(flow.amount, true)}
               </span>
             </div>
           );
@@ -54,18 +56,4 @@ export function IntelligenceBreakdown({
       </div>
     </div>
   );
-}
-
-function formatCurrency(value: number): string {
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000_000) {
-    return `$${(value / 1_000_000_000).toFixed(2)}B`;
-  }
-  if (abs >= 1_000_000) {
-    return `$${(value / 1_000_000).toFixed(1)}M`;
-  }
-  if (abs >= 1_000) {
-    return `$${(value / 1_000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
 }
