@@ -139,14 +139,14 @@ export async function fetchFlowIntelligence(
   console.log('[Intelligence] 1h exchange wallets:', metrics1h.reduce((sum, m) => sum + m.exchange.walletCount, 0));
   console.log('[Intelligence] 1d exchange wallets:', metrics24h.reduce((sum, m) => sum + m.exchange.walletCount, 0));
 
-  // Build token breakdown from 1h metrics
+  // Build token breakdown from 1h metrics (handle null values)
   const tokenBreakdown: TokenBreakdown[] = metrics1h.map(m => ({
     symbol: m.tokenSymbol || 'UNKNOWN',
     address: m.token || '',
     chain: m.chain,
-    whale: m.whale.netFlowUsd,
-    smartTrader: m.smartTrader.netFlowUsd,
-    exchange: m.exchange.netFlowUsd,
+    whale: m.whale.netFlowUsd || 0,
+    smartTrader: m.smartTrader.netFlowUsd || 0,
+    exchange: m.exchange.netFlowUsd || 0,
   }));
 
   return {
@@ -258,17 +258,18 @@ function aggregateMetrics(
   };
 
   for (const metric of metrics) {
-    aggregated.whale.netFlowUsd += metric.whale.netFlowUsd;
-    aggregated.whale.walletCount += metric.whale.walletCount;
+    // Handle null values from Nansen API by defaulting to 0
+    aggregated.whale.netFlowUsd += metric.whale.netFlowUsd || 0;
+    aggregated.whale.walletCount += metric.whale.walletCount || 0;
 
-    aggregated.smartTrader.netFlowUsd += metric.smartTrader.netFlowUsd;
-    aggregated.smartTrader.walletCount += metric.smartTrader.walletCount;
+    aggregated.smartTrader.netFlowUsd += metric.smartTrader.netFlowUsd || 0;
+    aggregated.smartTrader.walletCount += metric.smartTrader.walletCount || 0;
 
-    aggregated.exchange.netFlowUsd += metric.exchange.netFlowUsd;
-    aggregated.exchange.walletCount += metric.exchange.walletCount;
+    aggregated.exchange.netFlowUsd += metric.exchange.netFlowUsd || 0;
+    aggregated.exchange.walletCount += metric.exchange.walletCount || 0;
 
-    aggregated.freshWallets.netFlowUsd += metric.freshWallets.netFlowUsd;
-    aggregated.freshWallets.walletCount += metric.freshWallets.walletCount;
+    aggregated.freshWallets.netFlowUsd += metric.freshWallets.netFlowUsd || 0;
+    aggregated.freshWallets.walletCount += metric.freshWallets.walletCount || 0;
   }
 
   return aggregated;
