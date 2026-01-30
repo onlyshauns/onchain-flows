@@ -6,21 +6,21 @@ export function Header() {
   return (
     <header className="border-b border-[var(--card-border)] bg-[var(--card-bg)] backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-14">
           <div className="flex items-center gap-4">
             {/* Nansen-style icon with accent glow */}
             <div className="relative">
               <Activity
-                className="w-10 h-10 text-[var(--accent)] nansen-glow"
+                className="w-8 h-8 text-[var(--accent)] nansen-glow"
                 strokeWidth={2.5}
               />
             </div>
 
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-[var(--foreground)]">
+              <h1 className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
                 Onchain Flows
               </h1>
-              <p className="text-sm text-[var(--foreground)] opacity-60 flex items-center gap-2">
+              <p className="text-xs text-[var(--foreground)] opacity-60 flex items-center gap-2">
                 Powered by
                 <span className="font-semibold text-[var(--accent)]">Nansen</span>
               </p>

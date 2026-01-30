@@ -202,9 +202,9 @@ export default function Home() {
     <div className="min-h-screen bg-[var(--background)]">
       <Header />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
         {/* Chain Filters */}
-        <div className="mb-6">
+        <div className="mb-3">
           <h3 className="text-sm font-semibold text-[var(--foreground)] mb-3">Chains</h3>
           <div className="flex gap-2 overflow-x-auto pb-2">
             {[
@@ -232,7 +232,7 @@ export default function Home() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="border-b border-zinc-800">
             <div className="flex gap-2 overflow-x-auto">
               <button
