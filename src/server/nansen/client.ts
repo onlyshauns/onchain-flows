@@ -272,8 +272,8 @@ export class NansenClient {
       return [];
     }
 
-    // Fetch transfers for multiple tokens in parallel (expanded to 15 for broader coverage)
-    const tokensToFetch = popularTokens.slice(0, 15);
+    // Fetch transfers for multiple tokens in parallel (limited to 8 to avoid timeouts)
+    const tokensToFetch = popularTokens.slice(0, 8);
     console.log(`[NansenClient] Fetching ${tokensToFetch.length} tokens for ${chain}`);
 
     const promises = tokensToFetch.map(async tokenAddress => {

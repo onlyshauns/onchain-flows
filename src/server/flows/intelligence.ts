@@ -171,12 +171,16 @@ async function fetchMetricsForTimeframe(
 ): Promise<FlowIntelligenceMetrics[]> {
   const allMetrics: FlowIntelligenceMetrics[] = [];
 
-  // Fetch intelligence for ALL tokens on each chain in parallel
+  // Fetch intelligence for top tokens on each chain in parallel (limit to 8 per chain to avoid timeouts)
   const fetchPromises = chains.flatMap(chain => {
     const tokens = POPULAR_TOKENS[chain];
     if (!tokens || tokens.length === 0) return [];
 
-    return tokens.map(async tokenInfo => {
+    // Limit to first 8 tokens to avoid serverless function timeouts
+    const tokensToFetch = tokens.slice(0, 8);
+    console.log(`[Intelligence] Fetching ${tokensToFetch.length} tokens for ${chain} (${timeframe})`);
+
+    return tokensToFetch.map(async tokenInfo => {
       try {
         const response = await client.getFlowIntelligence(chain, tokenInfo.address, timeframe);
 
