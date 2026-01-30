@@ -1,30 +1,72 @@
 'use client';
 
-import { SentimentAnalysis } from '@/lib/utils/sentiment';
+import { useEffect, useState } from 'react';
+import { FearGreedReading, fetchCMCFearGreedIndex, getSentimentLevel } from '@/lib/cmc/fear-greed';
 
 interface SentimentGaugeProps {
-  sentiment: SentimentAnalysis;
+  // No props needed, we fetch CMC index directly
 }
 
-export function SentimentGauge({ sentiment }: SentimentGaugeProps) {
-  const { score, label, emoji, color, reasoning } = sentiment;
+export function SentimentGauge({}: SentimentGaugeProps) {
+  const [fearGreed, setFearGreed] = useState<FearGreedReading | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchIndex = async () => {
+      setIsLoading(true);
+      const data = await fetchCMCFearGreedIndex();
+      setFearGreed(data);
+      setIsLoading(false);
+    };
+
+    fetchIndex();
+
+    // Refresh every 5 minutes
+    const interval = setInterval(fetchIndex, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 animate-pulse">
+        <div className="h-32 bg-zinc-800 rounded-lg"></div>
+      </div>
+    );
+  }
+
+  if (!fearGreed) {
+    return null;
+  }
+
+  const sentiment = getSentimentLevel(fearGreed.value);
 
   return (
     <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-white">Market Sentiment</h3>
-        <span className="text-xs text-zinc-400 uppercase tracking-wider">Fear & Greed Index</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-zinc-400 uppercase tracking-wider">Crypto Fear & Greed Index</span>
+          <a
+            href="https://alternative.me/crypto/fear-and-greed-index/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-[var(--accent)] hover:underline"
+          >
+            ℹ️
+          </a>
+        </div>
       </div>
 
       {/* Main Score Display */}
       <div className="flex items-center gap-4 mb-6">
-        <div className="text-6xl">{emoji}</div>
+        <div className="text-6xl">{sentiment.emoji}</div>
         <div>
-          <div className="text-4xl font-bold" style={{ color }}>
-            {score}
+          <div className="text-4xl font-bold" style={{ color: sentiment.color }}>
+            {fearGreed.value}
           </div>
-          <div className="text-lg font-semibold text-white">{label}</div>
+          <div className="text-lg font-semibold text-white">{sentiment.level}</div>
         </div>
       </div>
 
@@ -41,7 +83,7 @@ export function SentimentGauge({ sentiment }: SentimentGaugeProps) {
           {/* Indicator */}
           <div
             className="absolute top-0 bottom-0 w-1 bg-white shadow-lg transition-all duration-500"
-            style={{ left: `${score}%` }}
+            style={{ left: `${fearGreed.value}%` }}
           />
         </div>
         {/* Labels */}
@@ -52,17 +94,28 @@ export function SentimentGauge({ sentiment }: SentimentGaugeProps) {
         </div>
       </div>
 
-      {/* Reasoning */}
-      <div className="space-y-2">
+      {/* Description */}
+      <div className="space-y-2 mb-4">
         <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-          Key Signals (1h)
+          What This Means
         </div>
-        {reasoning.map((reason, idx) => (
-          <div key={idx} className="text-sm text-zinc-300 flex items-start gap-2">
-            <span className="text-zinc-500 mt-0.5">•</span>
-            <span>{reason}</span>
-          </div>
-        ))}
+        <div className="text-sm text-zinc-300">
+          {fearGreed.value >= 80 && (
+            <p>Extreme greed signals overbought conditions. Market may be due for a correction. Consider taking profits.</p>
+          )}
+          {fearGreed.value >= 60 && fearGreed.value < 80 && (
+            <p>Greed is building in the market. Prices rising, but watch for reversal signals.</p>
+          )}
+          {fearGreed.value >= 40 && fearGreed.value < 60 && (
+            <p>Market sentiment is neutral. No extreme emotions driving price action.</p>
+          )}
+          {fearGreed.value >= 20 && fearGreed.value < 40 && (
+            <p>Fear is present in the market. May be opportunities to buy quality assets at discount.</p>
+          )}
+          {fearGreed.value < 20 && (
+            <p>Extreme fear often presents the best buying opportunities. "Be greedy when others are fearful."</p>
+          )}
+        </div>
       </div>
 
       {/* Methodology */}
@@ -72,13 +125,20 @@ export function SentimentGauge({ sentiment }: SentimentGaugeProps) {
             How is this calculated?
           </summary>
           <div className="mt-2 space-y-1 text-zinc-500">
-            <p>• Whale accumulation/distribution (±20pts)</p>
-            <p>• Smart money positioning (±25pts)</p>
-            <p>• Exchange flows - withdrawals = bullish (±20pts)</p>
-            <p>• Fresh wallet activity (±10pts)</p>
-            <p>• Overall market activity (±5pts)</p>
+            <p>The Crypto Fear & Greed Index analyzes multiple data sources:</p>
+            <p>• Volatility (25%) - Volmex implied volatility indices</p>
+            <p>• Market Momentum/Volume (25%) - Current volume vs averages</p>
+            <p>• Social Media (15%) - Twitter sentiment & engagement</p>
+            <p>• Surveys (15%) - Weekly crypto polls</p>
+            <p>• Bitcoin Dominance (10%) - BTC vs altcoin market share</p>
+            <p>• Google Trends (10%) - Search query volume</p>
           </div>
         </details>
+      </div>
+
+      {/* Last Updated */}
+      <div className="mt-3 text-xs text-zinc-500">
+        Last updated: {new Date(fearGreed.timestamp).toLocaleString()}
       </div>
     </div>
   );

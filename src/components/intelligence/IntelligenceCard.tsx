@@ -9,6 +9,7 @@ interface IntelligenceCardProps {
     walletCount: number;
   };
   emoji: string;
+  type: 'whale' | 'smart-money' | 'exchange';
 }
 
 export function IntelligenceCard({
@@ -16,18 +17,46 @@ export function IntelligenceCard({
   data1h,
   data24h,
   emoji,
+  type,
 }: IntelligenceCardProps) {
   const renderRow = (netFlowUsd: number, walletCount: number, timeframe: string) => {
     const isPositive = netFlowUsd > 0;
     const isNeutral = netFlowUsd === 0;
+
+    // For exchanges, INVERT the logic:
+    // Positive netFlow = inflows TO exchanges = bearish (selling pressure)
+    // Negative netFlow = outflows FROM exchanges = bullish (accumulation)
+    const isBullish = type === 'exchange' ? netFlowUsd < 0 : netFlowUsd > 0;
+
     const flowDirection = isPositive ? '↑' : isNeutral ? '→' : '↓';
-    const flowColor = isPositive
+    const flowColor = isBullish
       ? 'text-green-600 dark:text-green-400'
       : isNeutral
       ? 'text-gray-600 dark:text-gray-400'
       : 'text-red-600 dark:text-red-400';
 
     const formattedFlow = formatCurrency(Math.abs(netFlowUsd));
+
+    // Get descriptive label based on type and direction
+    let actionLabel = '';
+    if (type === 'exchange') {
+      if (isPositive) {
+        actionLabel = 'Inflows (Selling Pressure)';
+      } else if (isNeutral) {
+        actionLabel = 'Neutral';
+      } else {
+        actionLabel = 'Outflows (Accumulation)';
+      }
+    } else {
+      // Whales or Smart Money
+      if (isPositive) {
+        actionLabel = 'Accumulating';
+      } else if (isNeutral) {
+        actionLabel = 'Neutral';
+      } else {
+        actionLabel = 'Distributing';
+      }
+    }
 
     return (
       <div className="space-y-1">
@@ -38,13 +67,17 @@ export function IntelligenceCard({
         </div>
 
         <div className="flex items-center justify-between">
-          <p className="text-xs text-[var(--foreground)] opacity-60">
-            {walletCount.toLocaleString()} wallets
+          <p className={`text-xs font-medium ${flowColor}`}>
+            {actionLabel}
           </p>
           <p className="text-xs text-[var(--foreground)] opacity-50">
             {timeframe}
           </p>
         </div>
+
+        <p className="text-xs text-[var(--foreground)] opacity-60">
+          {walletCount.toLocaleString()} wallets
+        </p>
       </div>
     );
   };
