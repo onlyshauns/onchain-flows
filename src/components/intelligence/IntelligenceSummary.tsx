@@ -45,7 +45,20 @@ export function IntelligenceSummary({
     return null;
   }
 
-  const { aggregated } = intelligence;
+  const { aggregated, tokenBreakdown } = intelligence;
+
+  // Extract token flows for each category
+  const whaleTokens = tokenBreakdown
+    .filter(t => Math.abs(t.whale) > 100_000)
+    .map(t => ({ symbol: t.symbol, amount: t.whale, direction: t.whale > 0 ? 'inflow' as const : 'outflow' as const }));
+
+  const smartMoneyTokens = tokenBreakdown
+    .filter(t => Math.abs(t.smartTrader) > 100_000)
+    .map(t => ({ symbol: t.symbol, amount: t.smartTrader, direction: t.smartTrader > 0 ? 'inflow' as const : 'outflow' as const }));
+
+  const exchangeTokens = tokenBreakdown
+    .filter(t => Math.abs(t.exchange) > 1_000_000)
+    .map(t => ({ symbol: t.symbol, amount: t.exchange, direction: t.exchange > 0 ? 'inflow' as const : 'outflow' as const }));
 
   return (
     <div className="mb-6">
@@ -74,6 +87,7 @@ export function IntelligenceSummary({
             netFlowUsd: aggregated['24h'].whale.netFlowUsd,
             walletCount: aggregated['24h'].whale.walletCount,
           }}
+          tokenFlows={whaleTokens}
         />
 
         <IntelligenceCard
@@ -88,6 +102,7 @@ export function IntelligenceSummary({
             netFlowUsd: aggregated['24h'].smartTrader.netFlowUsd,
             walletCount: aggregated['24h'].smartTrader.walletCount,
           }}
+          tokenFlows={smartMoneyTokens}
         />
 
         <IntelligenceCard
@@ -102,6 +117,7 @@ export function IntelligenceSummary({
             netFlowUsd: aggregated['24h'].exchange.netFlowUsd,
             walletCount: aggregated['24h'].exchange.walletCount,
           }}
+          tokenFlows={exchangeTokens}
         />
       </div>
 

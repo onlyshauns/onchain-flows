@@ -3,40 +3,41 @@ import { Chain } from '@/types/flows';
 import { NansenFlowIntelligence } from '@/lib/nansen/types';
 
 // Top tokens to track for flow intelligence (expanded list)
-const POPULAR_TOKENS: Record<Chain, string[]> = {
+const POPULAR_TOKENS: Record<Chain, { address: string; symbol: string }[]> = {
   ethereum: [
-    '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', // USDC
-    '0xdac17f958d2ee523a2206206994597c13d831ec7', // USDT
-    '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', // WETH
-    '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', // WBTC
-    '0x6b175474e89094c44da98b954eedeac495271d0f', // DAI
-    '0x514910771af9ca656af840dff83e8264ecf986ca', // LINK
-    '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0', // MATIC
-    '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', // UNI
-    '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce', // SHIB
-    '0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b', // CRO
+    { address: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48', symbol: 'USDC' },
+    { address: '0xdac17f958d2ee523a2206206994597c13d831ec7', symbol: 'USDT' },
+    { address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', symbol: 'WETH' },
+    { address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', symbol: 'WBTC' },
+    { address: '0x6b175474e89094c44da98b954eedeac495271d0f', symbol: 'DAI' },
+    { address: '0x514910771af9ca656af840dff83e8264ecf986ca', symbol: 'LINK' },
+    { address: '0x7d1afa7b718fb893db30a3abc0cfc608aacfebb0', symbol: 'MATIC' },
+    { address: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', symbol: 'UNI' },
+    { address: '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce', symbol: 'SHIB' },
+    { address: '0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b', symbol: 'CRO' },
   ],
   solana: [
-    'So11111111111111111111111111111111111111112', // SOL (wrapped)
-    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', // USDC
-    'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', // USDT
-    'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So', // mSOL
-    'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn', // JitoSOL
-    '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', // Ether (Wormhole)
-    'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', // BONK
+    { address: 'So11111111111111111111111111111111111111112', symbol: 'SOL' },
+    { address: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', symbol: 'USDC' },
+    { address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', symbol: 'USDT' },
+    { address: 'mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So', symbol: 'mSOL' },
+    { address: 'J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn', symbol: 'JitoSOL' },
+    { address: '7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs', symbol: 'ETH' },
+    { address: 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263', symbol: 'BONK' },
   ],
   base: [
-    '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', // USDC
-    '0x4200000000000000000000000000000000000006', // WETH
-    '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', // DAI
-    '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca', // USDbC
-    '0x940181a94a35a4569e4529a3cdfb74e38fd98631', // AERO
+    { address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', symbol: 'USDC' },
+    { address: '0x4200000000000000000000000000000000000006', symbol: 'WETH' },
+    { address: '0x50c5725949a6f0c72e6c4a641f24049a917db0cb', symbol: 'DAI' },
+    { address: '0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca', symbol: 'USDbC' },
+    { address: '0x940181a94a35a4569e4529a3cdfb74e38fd98631', symbol: 'AERO' },
   ],
 };
 
 export interface FlowIntelligenceMetrics {
   chain: Chain;
   token?: string;
+  tokenSymbol?: string;
   whale: {
     netFlowUsd: number;
     avgFlowUsd: number;
@@ -59,6 +60,15 @@ export interface FlowIntelligenceMetrics {
   };
 }
 
+export interface TokenBreakdown {
+  symbol: string;
+  address: string;
+  chain: Chain;
+  whale: number;
+  smartTrader: number;
+  exchange: number;
+}
+
 export interface FlowIntelligenceSummary {
   chains: Chain[];
   metrics: FlowIntelligenceMetrics[];
@@ -76,6 +86,7 @@ export interface FlowIntelligenceSummary {
       freshWallets: { netFlowUsd: number; walletCount: number };
     };
   };
+  tokenBreakdown: TokenBreakdown[]; // Per-token flows for detailed view
   lastUpdated: string;
 }
 
@@ -98,6 +109,16 @@ export async function fetchFlowIntelligence(
   console.log('[Intelligence] 1h exchange wallets:', metrics1h.reduce((sum, m) => sum + m.exchange.walletCount, 0));
   console.log('[Intelligence] 1d exchange wallets:', metrics24h.reduce((sum, m) => sum + m.exchange.walletCount, 0));
 
+  // Build token breakdown from 1h metrics
+  const tokenBreakdown: TokenBreakdown[] = metrics1h.map(m => ({
+    symbol: m.tokenSymbol || 'UNKNOWN',
+    address: m.token || '',
+    chain: m.chain,
+    whale: m.whale.netFlowUsd,
+    smartTrader: m.smartTrader.netFlowUsd,
+    exchange: m.exchange.netFlowUsd,
+  }));
+
   return {
     chains,
     metrics: metrics1h, // Use 1h for backwards compatibility
@@ -105,6 +126,7 @@ export async function fetchFlowIntelligence(
       '1h': aggregateMetrics(metrics1h),
       '24h': aggregateMetrics(metrics24h),
     },
+    tokenBreakdown,
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -124,16 +146,16 @@ async function fetchMetricsForTimeframe(
     const tokens = POPULAR_TOKENS[chain];
     if (!tokens || tokens.length === 0) return [];
 
-    return tokens.map(async token => {
+    return tokens.map(async tokenInfo => {
       try {
-        const response = await client.getFlowIntelligence(chain, token, timeframe);
+        const response = await client.getFlowIntelligence(chain, tokenInfo.address, timeframe);
 
         if (response && response.data && response.data.length > 0) {
           const data = response.data[0]; // Latest data point
-          return mapToFlowIntelligenceMetrics(chain, token, data);
+          return mapToFlowIntelligenceMetrics(chain, tokenInfo.address, tokenInfo.symbol, data);
         }
       } catch (error) {
-        console.error(`[Intelligence] Error fetching ${chain}/${token} (${timeframe}):`, error);
+        console.error(`[Intelligence] Error fetching ${chain}/${tokenInfo.symbol} (${timeframe}):`, error);
         // Return null on error, we'll filter it out
       }
       return null;
@@ -157,11 +179,13 @@ async function fetchMetricsForTimeframe(
 function mapToFlowIntelligenceMetrics(
   chain: Chain,
   token: string,
+  tokenSymbol: string,
   data: NansenFlowIntelligence
 ): FlowIntelligenceMetrics {
   return {
     chain,
     token,
+    tokenSymbol,
     whale: {
       netFlowUsd: data.whale_net_flow_usd,
       avgFlowUsd: data.whale_avg_flow_usd,

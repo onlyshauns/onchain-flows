@@ -7,16 +7,14 @@ import { IntelligenceSummary } from '@/components/intelligence/IntelligenceSumma
 import { Flow, Chain } from '@/types/flows';
 import { FlowIntelligenceSummary } from '@/server/flows/intelligence';
 
-type TabType = 'intelligence' | 'all' | 'deposits' | 'withdrawals' | 'funds' | 'market-makers' | 'token-spotlight' | 'hot-tokens';
+type TabType = 'intelligence' | 'all' | 'deposits' | 'withdrawals' | 'funds' | 'market-makers';
 
 export default function Home() {
   const [flows, setFlows] = useState<Flow[]>([]);
-  const [specialTabFlows, setSpecialTabFlows] = useState<Flow[]>([]); // For token-spotlight, hot-tokens
   const [intelligence, setIntelligence] = useState<FlowIntelligenceSummary | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('intelligence');
   const [chainFilter, setChainFilter] = useState<Chain[]>(['ethereum', 'solana', 'base']);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingSpecial, setIsLoadingSpecial] = useState(false); // For special tabs
   const [isLoadingIntelligence, setIsLoadingIntelligence] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -129,90 +127,6 @@ export default function Home() {
     };
   }, [chainFilter]); // Re-fetch when chain filter changes
 
-  // Fetch special tab data (token-spotlight, hot-tokens) when active
-  useEffect(() => {
-    // Reset special tab data when switching away from special tabs
-    if (activeTab !== 'token-spotlight' && activeTab !== 'hot-tokens') {
-      setSpecialTabFlows([]);
-      setIsLoadingSpecial(false);
-      return;
-    }
-
-    let isCancelled = false;
-
-    const fetchSpecialTab = async () => {
-      try {
-        console.log(`[Home] Fetching ${activeTab} data...`);
-        setIsLoadingSpecial(true);
-
-        const chainsParam = chainFilter.join(',');
-        const endpoint = activeTab === 'token-spotlight' ? '/api/token-spotlight' : '/api/hot-tokens';
-
-        const response = await fetch(`${endpoint}?chains=${chainsParam}`, {
-          cache: 'no-store',
-          headers: {
-            'Cache-Control': 'no-cache',
-            'Pragma': 'no-cache',
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`${activeTab} API error: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        console.log(`[Home] Received ${activeTab} movements:`, data.movements?.length || 0);
-
-        if (!isCancelled) {
-          // Convert movements to flows
-          const flows: Flow[] = data.movements.map((m: any) => ({
-            id: m.id,
-            type: m.movementType === 'swap' ? 'smart-money' : 'whale-movement',
-            chain: m.chain,
-            timestamp: m.ts,
-            amount: m.tokenAmount || 0,
-            amountUsd: m.amountUsd,
-            token: {
-              symbol: m.assetSymbol || 'UNKNOWN',
-              address: m.assetAddress || '',
-              name: m.assetSymbol,
-            },
-            from: {
-              address: m.fromAddress || '',
-              label: m.fromLabel,
-            },
-            to: {
-              address: m.toAddress || '',
-              label: m.toLabel,
-            },
-            txHash: m.txHash || '',
-            metadata: {
-              category: m.tags[0],
-              tags: m.tags,
-              confidence: 85,
-              anomalyScore: 70,
-            },
-          }));
-
-          setSpecialTabFlows(flows);
-          setIsLoadingSpecial(false);
-        }
-      } catch (error) {
-        console.error(`[Home] Error fetching ${activeTab}:`, error);
-        if (!isCancelled) {
-          setSpecialTabFlows([]);
-          setIsLoadingSpecial(false);
-        }
-      }
-    };
-
-    fetchSpecialTab();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [activeTab, chainFilter]); // Re-fetch when tab or chain filter changes
 
   // Tab-based filtering
   const filteredFlows = flows.filter(f => {
@@ -255,7 +169,6 @@ export default function Home() {
   // Debug logging for frontend filtering
   console.log('[Home] Active tab:', activeTab);
   console.log('[Home] Total flows:', flows.length);
-  console.log('[Home] Special tab flows:', specialTabFlows.length);
   console.log('[Home] Filtered flows:', filteredFlows.length);
   if (flows.length > 0) {
     console.log('[Home] Sample flow tags:', flows[0].metadata?.tags);
@@ -382,26 +295,6 @@ export default function Home() {
               >
                 🤝 Market Makers
               </button>
-              <button
-                onClick={() => setActiveTab('token-spotlight')}
-                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
-                  activeTab === 'token-spotlight'
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
-                }`}
-              >
-                🎯 Token Spotlight
-              </button>
-              <button
-                onClick={() => setActiveTab('hot-tokens')}
-                className={`px-6 py-4 text-sm font-semibold transition-colors whitespace-nowrap rounded-t-lg ${
-                  activeTab === 'hot-tokens'
-                    ? 'text-[var(--accent)] border-b-2 border-[var(--accent)] bg-zinc-900/50'
-                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/30'
-                }`}
-              >
-                🔥 Hot Tokens
-              </button>
             </div>
           </div>
         </div>
@@ -415,7 +308,7 @@ export default function Home() {
         )}
 
         {/* Show last updated only when not loading */}
-        {lastUpdated && activeTab !== 'intelligence' && !isLoading && !isLoadingSpecial && (
+        {lastUpdated && activeTab !== 'intelligence' && !isLoading && (
           <p className="text-xs text-zinc-500 mb-4">
             Last updated: {lastUpdated.toLocaleTimeString()} • {flows.length} flows • {filteredFlows.length} after filter
           </p>
@@ -429,7 +322,7 @@ export default function Home() {
         )}
 
         {/* Show warning only when NOT loading */}
-        {!isLoading && !isLoadingSpecial && !error && flows.length > 0 && filteredFlows.length === 0 && activeTab !== 'intelligence' && activeTab !== 'token-spotlight' && activeTab !== 'hot-tokens' && (
+        {!isLoading && !error && flows.length > 0 && filteredFlows.length === 0 && activeTab !== 'intelligence' && (
           <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
             <p className="text-yellow-900 dark:text-yellow-100 font-medium">No flows match this filter</p>
             <p className="text-yellow-700 dark:text-yellow-300 text-sm">Try selecting a different tab or chain</p>
@@ -439,8 +332,8 @@ export default function Home() {
         {/* Show flow list on non-intelligence tabs */}
         {activeTab !== 'intelligence' && (
           <FlowList
-            flows={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? specialTabFlows : filteredFlows}
-            isLoading={(activeTab === 'token-spotlight' || activeTab === 'hot-tokens') ? isLoadingSpecial : isLoading}
+            flows={filteredFlows}
+            isLoading={isLoading}
           />
         )}
       </div>
