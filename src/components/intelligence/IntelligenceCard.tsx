@@ -91,28 +91,28 @@ export function IntelligenceCard({
   };
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] hover:border-[var(--accent)] rounded-xl p-4 transition-all duration-300 hover:shadow-lg hover:nansen-glow">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] hover:border-[var(--accent)] rounded-xl p-3 transition-all duration-300 hover:shadow-lg hover:nansen-glow">
+      <div className="flex items-center gap-2 mb-2">
         <span className="text-2xl">{emoji}</span>
         <h3 className="text-sm font-medium text-[var(--foreground)]">
           {label}
         </h3>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {renderRow(data1h.netFlowUsd, data1h.walletCount, '1h')}
-        <div className="border-t border-[var(--card-border)] pt-2">
+        <div className="border-t border-[var(--card-border)] pt-1.5">
           {renderRow(data24h.netFlowUsd, data24h.walletCount, '24h')}
         </div>
       </div>
 
       {/* Token Breakdown */}
       {tokenFlows && tokenFlows.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-[var(--card-border)]">
-          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+        <div className="mt-2 pt-2 border-t border-[var(--card-border)]">
+          <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1.5">
             Top Tokens (1h)
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {tokenFlows.slice(0, 5).map((flow, idx) => {
               const isPositive = flow.amount > 0;
               const isBullish = type === 'exchange' ? flow.amount < 0 : flow.amount > 0;

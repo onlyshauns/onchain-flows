@@ -42,9 +42,9 @@ export function SentimentGauge({}: SentimentGaugeProps) {
   const sentiment = getSentimentLevel(fearGreed.value);
 
   return (
-    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-5">
+    <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-white">Market Sentiment</h3>
         <div className="flex items-center gap-2">
           <span className="text-xs text-zinc-400 uppercase tracking-wider">Crypto Fear & Greed Index</span>
@@ -60,19 +60,19 @@ export function SentimentGauge({}: SentimentGaugeProps) {
       </div>
 
       {/* Main Score Display */}
-      <div className="flex items-center gap-4 mb-4">
-        <div className="text-6xl">{sentiment.emoji}</div>
+      <div className="flex items-center gap-3 mb-3">
+        <div className="text-5xl">{sentiment.emoji}</div>
         <div>
-          <div className="text-4xl font-bold" style={{ color: sentiment.color }}>
+          <div className="text-3xl font-bold" style={{ color: sentiment.color }}>
             {fearGreed.value}
           </div>
-          <div className="text-lg font-semibold text-white">{sentiment.level}</div>
+          <div className="text-base font-semibold text-white">{sentiment.level}</div>
         </div>
       </div>
 
       {/* Visual Gauge */}
-      <div className="mb-4">
-        <div className="h-3 bg-zinc-800 rounded-full overflow-hidden relative">
+      <div className="mb-3">
+        <div className="h-2 bg-zinc-800 rounded-full overflow-hidden relative">
           {/* Gradient background */}
           <div
             className="absolute inset-0"
@@ -95,11 +95,11 @@ export function SentimentGauge({}: SentimentGaugeProps) {
       </div>
 
       {/* Description */}
-      <div className="space-y-2 mb-3">
-        <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
+      <div className="space-y-1 mb-2">
+        <div className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-1">
           What This Means
         </div>
-        <div className="text-sm text-zinc-300">
+        <div className="text-xs text-zinc-300">
           {fearGreed.value >= 80 && (
             <p>Extreme greed signals overbought conditions. Market may be due for a correction. Consider taking profits.</p>
           )}
@@ -119,7 +119,7 @@ export function SentimentGauge({}: SentimentGaugeProps) {
       </div>
 
       {/* Methodology */}
-      <div className="mt-4 pt-4 border-t border-zinc-800">
+      <div className="mt-3 pt-3 border-t border-zinc-800">
         <details className="text-xs text-zinc-400">
           <summary className="cursor-pointer hover:text-zinc-300 font-medium">
             How is this calculated?
@@ -137,7 +137,7 @@ export function SentimentGauge({}: SentimentGaugeProps) {
       </div>
 
       {/* Last Updated */}
-      <div className="mt-3 text-xs text-zinc-500">
+      <div className="mt-2 text-xs text-zinc-500">
         Last updated: {new Date(fearGreed.timestamp).toLocaleString()}
       </div>
     </div>
